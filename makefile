@@ -8,6 +8,10 @@ CONTEUDO = lib/ src/ makefile
 NOME = codigo-info
 CAMINHO = $(VERSOES_DIR)/$(NOME).$(VERSAO)
 
+# Tal biblioteca apenas funciona na máquina do desenvolvedor do projeto.
+LIB_UTILS_HEADERS = $(C_CODES)/utilitarios-em-c/include
+LIB_UTILS_BINS		= $(C_CODES)/utilitarios-em-c/bin/shared
+
 salva:
 	tar -cvf $(CAMINHO).tar $(CONTEUDO)
 
@@ -29,29 +33,42 @@ DEPS = build/arraylist.o build/legivel.o build/tempo.o
 SRCS = src/main.c src/hashtable.c
 
 cria-diretorios:
-	@mkdir --mode=0770 -p bin lib
+	@mkdir --mode=0770 -p bin lib/include build/
 
 unit-tests: cria-diretorios
 	gcc -I ../utilitarios/include -D_UNIT_TESTS -Ofast -Wall \
 		-o bin/unit-tests src/main.c -Llib -llegivel
 
-debug: cria-diretorios
-	@echo "criando diretórios 'bin' e 'build' ..."
-	mkdir -pv bin/ build/
-	@echo "criando objetos das dependências em 'build' ..."
-	gcc -c -o build/legivel.o lib/utilitarios/legivel.c
-	gcc -c -o build/arraylist.o src/arraylist.c
-	gcc -c -o build/tempo.o lib/utilitarios/tempo.c
-	# nome do executável e fonte do programa:
-	@echo "compilando de fato o teste ..."
-	#gcc $(DEBUG_FLAGS) -o $(NOME_EXE) src/main.c \
-	#src/arraylist.c src/hashtable.c build/legivel.o build/tempo.o \
-	#-Wno-unused-function -Wno-main -Wall -I ./lib/utilitarios
-	gcc $(DEBUG_FLAGS) -o $(NOME_EXE) $(SRCS) $(DEPS) \
-	-Wno-unused-function -Wno-main -Wall -I ./lib/utilitarios
-	# teste do componente de lista do código:
-	@echo "compilando o teste da 'array-lista' ..."
-	gcc -o bin/ut_arraylist src/arraylist.c -D_UT_ARRAY_LISTA -Wall
+debug:
+	gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -D__unit_tests__ -Wall \
+		-Wno-unused-function -Wno-main \
+		-o $(NOME_EXE) ./src/main.c \
+		-L$(LIB_UTILS_BINS) -lhtref -llegivel -lmemoria -llaref
+	
+LIB_UTILS_ST_BINS = $(CCODES)/utilitarios-em-c/bin/static
+# Apenas funciona na máquina do desenvolvedor do projeto. Você obviamente
+# não precisa fazer isso, pois os binários necessários já vem junto.
+importa-biblioteca-externas:
+	@cp -uv	$(LIB_UTILS_ST_BINS)/liblegivel.a			\
+				$(LIB_UTILS_ST_BINS)/libhtref.a				\
+				$(LIB_UTILS_ST_BINS)/libmemoria.a			\
+				$(LIB_UTILS_ST_BINS)/liblaref.a				\
+				$(LIB_UTILS_ST_BINS)/libestringue.a			\
+				$(LIB_UTILS_ST_BINS)/libteste.a				\
+				$(LIB_UTILS_ST_BINS)/libtempo.a				\
+				$(LIB_UTILS_ST_BINS)/libterminal.a			\
+				./lib/
+	@cp -uv	$(LIB_UTILS_HEADERS)/legivel.h						\
+				$(LIB_UTILS_HEADERS)/hashtable_ref.h				\
+				$(LIB_UTILS_HEADERS)/memoria.h						\
+				$(LIB_UTILS_HEADERS)/listaarray_ref.h				\
+				$(LIB_UTILS_HEADERS)/estringue.h						\
+				$(LIB_UTILS_HEADERS)/teste.h							\
+				$(LIB_UTILS_HEADERS)/tempo.h							\
+				$(LIB_UTILS_HEADERS)/terminal.h						\
+				./lib/include
+	@echo "As bibliotecas estáticas liblegivel, libhtref, libmemoria, liblaref e libestringue foram copiadas com sucesso."
+
 
 #=== === === === === === === === === === === === === === === ==== == === ==
 release: cria-diretorios
@@ -60,4 +77,7 @@ release: cria-diretorios
    -I lib/utilitarios -Wall
 
 
-
+variaveis_de_ambiente:
+	gcc -g3 -O0 -I$(LIB_UTILS_HEADERS) -Wall -pedantic -D__unit_tests__ \
+		-o ./bin/ut_$@ ./src/$@.c \
+		-L$(LIB_UTILS_BINS) -lteste -lestringue -lm
