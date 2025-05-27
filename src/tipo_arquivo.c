@@ -153,39 +153,39 @@ TipoDeArquivo tipo_do_arquivo(char* arquivo_caminho) {
 const char* ta_to_str(TipoDeArquivo tipo) {
    switch (tipo) {
       // códigos-fontes:
-      case C:  return "C Code";
-      case CPLUSPLUS:  return "C++ Code";
-      case PYTHON:  return "Python Code";
-      case JAVA:  return "Java Code";
-      case TEXTO: return "Texto Unicode";
-      case RUST: return "Rust Code";
-      case GOLANG: return "Go Code";
-      case JAVASCRIPT: return "Javascript Code";
-      case HTML: return "HTML Code";
-      case XML: return "XML Code";
+      case C:           return "C Code";
+      case CPLUSPLUS:   return "C++ Code";
+      case PYTHON:      return "Python Code";
+      case JAVA:        return "Java Code";
+      case TEXTO:       return "Texto Unicode";
+      case RUST:        return "Rust Code";
+      case GOLANG:      return "Go Code";
+      case JAVASCRIPT:  return "Javascript Code";
+      case HTML:        return "HTML Code";
+      case XML:         return "XML Code";
       // arquivos comprimidos:
-      case TAR: return "Tar archive";
-      case ZIP: return "Zip compacted archive";
-      case GZIP: return "Gzip compacted archive";
+      case TAR:         return "Tar archive";
+      case ZIP:         return "Zip compacted archive";
+      case GZIP:        return "Gzip compacted archive";
       // bancos de dados:
-      case DAT: return "Data database";
-      case JSON: return "JSON database";
-      case SRT: return "Subtitles database";
+      case DAT:         return "Data database";
+      case JSON:        return "JSON database";
+      case SRT:         return "Subtitles database";
       // binários:
-      case ELF: return "ELF executable";
+      case ELF:         return "ELF executable";
       // arquivos de multimídia:
-      case JPEG: return "JPEG image data";
-      case PNG: return "PNG image data";
-      case GIF: return "GIF image data";
-      case MKV: return "Mastroka(mkv) video data";
-      case MP4: return "MP4 video data";
-      case MP3: return "MP3 song data";
-      case PDF: return "PDF file";
-      case EPUB: return "EPUB file";
-      case DOCS: return "DOCs office suite";
-      case METADADOS: return "Metadados";
-      case ARTEFATO: return "Object artefacts";
-      case BUILD: return "START build files";
+      case JPEG:        return "JPEG image data";
+      case PNG:         return "PNG image data";
+      case GIF:         return "GIF image data";
+      case MKV:         return "Mastroka(mkv) video data";
+      case MP4:         return "MP4 video data";
+      case MP3:         return "MP3 song data";
+      case PDF:         return "PDF file";
+      case EPUB:        return "EPUB file";
+      case DOCS:        return "DOCs office suite";
+      case METADADOS:   return "Metadados";
+      case ARTEFATO:    return "Object artefacts";
+      case BUILD:       return "START build files";
 
       // caso de nenhum acima, interrompe o programa.
       default:

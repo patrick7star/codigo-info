@@ -18,9 +18,13 @@
 // header files do Glibc:
 #include <dirent.h>
 #include <sys/stat.h>
+#include <sys/time.h>
+#include <unistd.h>
 // biblioteca externa com 'utilitários':
 #include "legivel.h"
 #include "tempo.h"
+#include "hashtable_ref.h"
+#include "memoria.h"
 
 // Nemômicos dos resultados das operações:
 #define STAT_FALHOU -1
@@ -132,58 +136,98 @@ static void mostra_nome_do_arquivo(char* caminho) {
  */
 #include "filtro.c"
 
-/* Estrutura de mapas/dicionários/hashtable etc. Alguns métodos e funções
- * que ela devolve:
- *
- *       - cria_ht         - contem_ht          - atualiza_ht
- *       - insere_ht       - ht_to_str          - destroi_ht 
- */
-#include "hashtable_ref.h"
-
 typedef struct diretorio_info {
-   // raíz que é analisada(referência estática da string).
+   // Raíz que é analisada(referência estática da string).
    char* caminho_do_projeto;
-   // quantidade arquivos dentro deste diretório.
+   // Quantidade arquivos dentro deste diretório.
    size_t total_de_arquivos;
-   // média de linhas por arquivo.
+   // Média de linhas por arquivo.
    float media_de_linhas;
-   // total de linhas do projeto como todo.
+   // Total de linhas do projeto como todo.
    size_t total_de_linhas;
 
-   // tipos contidos nele:
-   hashtable_t* todos_tipos;
+   // Dicionário com todos 'tipos' coletados e suas respectivas frequências.
+   hashtable_t* todos_tipos; // seu tipo é 'char*: int'
 
-} DiretorioInfo;
+} DiretorioInfo, DirInfo, DI, *DirInfoRef, *DIRef;
 
-void visualiza_diretorio_info (struct diretorio_info* i) {
-   char* frequencias_de_tipos = ht_to_str (i->todos_tipos);
-   // formantando ela melhor, tirando o rótulo de hashtable...
-   frequencias_de_tipos = strchr(frequencias_de_tipos, ':');
-   frequencias_de_tipos += 2;
+char* ht_to_str(HashTable m) {
+   IteradorHT iter = cria_iter_ht(m);
+   const int sz = sizeof(char), QTD = 4000;
+   char* fmt = malloc(QTD * sz), buffer[100];
+
+   // Coloca o primeiro demilitador antes da iteração.
+   memset(buffer, '\0', 100);
+   if (tamanho_ht(m) >= 5)
+      strcpy(fmt, "{\n");
+   else
+      strcpy(fmt, "{");
+
+   while (!consumido_iter_ht(iter))
+   {
+      IterOutputHT a = next_ht(iter);
+      char* chave = (char*)a.key;
+      int valor = *((int*)a.value);
+
+      if (tamanho_ht(m) >= 5)
+         sprintf(buffer, "\t\b\b%s: %d,\n", chave, valor);
+      else
+         sprintf(buffer, "%s: %d, ", chave, valor);
+      strcat(fmt, buffer);
+   }
+   // Coloca o último delimitador, depois de todas concatenações. E pronto,
+   // está finalizado a formatação.
+   if (tamanho_ht(m) >= 5)
+      strcat(fmt, "  }");
+   else
+      strcat(fmt, "\b\b}");
+   return fmt;
+}
+
+void visualiza_diretorio_info (DiretorioInfo* i) {
+   char* frequencias_coletadas = ht_to_str ((*i).todos_tipos);
 
    printf (
       "\n  caminho: '%s'\n"
-      // "  qtd. de arquivos: %lu\n"
       "  qtd. de arquivos: %s\n"
       "  média de linhas por arquivo: %0.1f\n"
-      // "  total de linhas: %lu\n"
       "  total de linhas: %s\n"
       "  tipos de arquivos: %s\n\n",
       i->caminho_do_projeto,
-      // i->total_de_arquivos, 
       valor_legivel (i->total_de_arquivos),
       i->media_de_linhas,
-      // i->total_de_linhas,
       valor_legivel (i->total_de_linhas),
-      frequencias_de_tipos
+      frequencias_coletadas
    );
 }
 
+static double decorrido_timeval(struct timeval f, struct timeval i) { 
+// Marca o tempo decorrido entre dois 'timeval', e computa os em segundos.
+   double segundos = (double)(f.tv_sec - i.tv_sec); 
+   double microsegs = (double)(f.tv_usec - i.tv_usec); 
+
+   return segundos + microsegs / 1.0e6;
+}
+
+static size_t key_hash(Generico key, size_t p) 
+{
+// O mesmo hash que uso na maioria das narrow strings.
+   char* chave = (char*)key;
+   size_t len = strlen(chave);
+   size_t code = (int)chave[len / 2];
+
+   return (len * code) % p;
+}
+
+static bool key_eq(Generico a, Generico b) 
+// Apenas embrulhando a comparação de strings.
+   { return strcmp((char*)a, (char*)b) == 0; }
+
 struct diretorio_info processa_projeto(char* caminho) {
    DiretorioInfo coletado = {
-      .total_de_arquivos = 0LLU, 
-      .media_de_linhas = 0.0f, 
-      .todos_tipos = cria_ht()
+      .total_de_arquivos  = 0LLU, 
+      .media_de_linhas    = 0.0f, 
+      .todos_tipos        = cria_ht(key_hash, key_eq)
    };
    struct stat atributos;
    vetor_t* lista_caminhos;
@@ -206,8 +250,11 @@ struct diretorio_info processa_projeto(char* caminho) {
    puts ("Começou o processo de varredura dos arquivos ...");
    size_t processados = 0, rejeitados = 0;
    size_t inicialmente = tamanho_al (lista_caminhos);
-   Temporizador contador = cria_temporizador(Miliseg, 300);
+   // Temporizador contador = cria_temporizador(Miliseg, 300);
+   // Definindo uma pausa de 300 milisegundos.
+   struct timeval inicio, final;
 
+   gettimeofday(&inicio, NULL);
    /* retirando cada caminho extraído, e processando seu conteúdo interno.*/
    while (!vazia_al(lista_caminhos)) {
       char* arquivo = remove_al(lista_caminhos);
@@ -222,10 +269,14 @@ struct diretorio_info processa_projeto(char* caminho) {
       hashtable_t* mapa = coletado.todos_tipos;
 
       if (contem_ht (mapa, chave)) {
-         valor_t atual = *obtem_ht (mapa, chave);
-         atualiza_ht (mapa, chave, atual + 1);
-      } else 
-         insere_ht (mapa, chave, 1);
+         generico_t valor = obtem_ht (mapa, chave);
+         int* atual = (int*)valor;
+
+         *atual = *atual + 1;
+      } else {
+         int* valor = box_int(1);
+         insere_ht (mapa, chave, valor);
+      }
 
       if (pode_ser_lido (tipo_do_arquivo (arquivo)))
          /* apenas faz o processo de contagem de linhas, e demais dados
@@ -244,9 +295,11 @@ struct diretorio_info processa_projeto(char* caminho) {
       coletado.media_de_linhas += (float)n_linhas / n_arquivos;
       fclose(stream);
 
-      // só dispara info a cada um terço de segundo.
-      bool e_hora_de_disparar = esgotado(contador);
-      if (e_hora_de_disparar) {
+      // Segundo registro de tempo seguido.
+      gettimeofday(&final, NULL);
+
+      if (decorrido_timeval(final, inicio) >= 0.300) 
+      {
          char* rejeicoesstr = valor_legivel (rejeitados);
          printf (
             "Arquivos processados e rejeitados [%5lu/%8s] de %lu.\n", 
@@ -254,9 +307,8 @@ struct diretorio_info processa_projeto(char* caminho) {
          );
          // liberando string depois de impressão na tela...
          free (rejeicoesstr);
-         // reseta a contagem-regressiva para próxima contagem.
-         destroi_temporizador (contador);
-         contador = cria_temporizador (Miliseg, 300);
+         // Reseta contagem, registrando um novo tempo do marcador inicial.
+         gettimeofday(&inicio, NULL);
       }
    } 
    char* rejeicoesstr = valor_legivel (rejeitados);
@@ -282,7 +334,7 @@ bool e_um_diretorio(char* caminho) {
  * compilação, a constante de debug ou teste unitário, seja como está sendo
  * chamado agora.
  */
-#ifdef _UNIT_TESTS
+#ifdef __unit_tests__
 /* == === === === === === === === === === === === === === === ==== == === =
 *                       Testes Unitários
 *                    da Combinação de Arquivos 
