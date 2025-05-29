@@ -23,28 +23,6 @@ backups:
 	@echo -e "\nvisualizar todos backups deste projeto:"
 	@ls --sort=time -1 ../versions/codigo-info*.tar
 
-#=== === === === === === === === === === === === === === === ==== == === ==
-DEBUG_FLAGS = -D_MODO_DEBUG \
-				  -D_FILTRA_TODOS_ARQUIVOS \
-				  -D_REDIMENSIONA \
-				  -U_REDIMENSIONA
-NOME_EXE = bin/codigo_info_debug
-DEPS = build/arraylist.o build/legivel.o build/tempo.o 
-SRCS = src/main.c src/hashtable.c
-
-cria-diretorios:
-	@mkdir --mode=0770 -p bin lib/include build/
-
-unit-tests: cria-diretorios
-	gcc -I ../utilitarios/include -D_UNIT_TESTS -Ofast -Wall \
-		-o bin/unit-tests src/main.c -Llib -llegivel
-
-debug:
-	gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -D__unit_tests__ -Wall \
-		-Wno-unused-function -Wno-main \
-		-o $(NOME_EXE) ./src/main.c \
-		-L$(LIB_UTILS_BINS) -lhtref -llegivel -lmemoria -llaref
-	
 LIB_UTILS_ST_BINS = $(CCODES)/utilitarios-em-c/bin/static
 # Apenas funciona na máquina do desenvolvedor do projeto. Você obviamente
 # não precisa fazer isso, pois os binários necessários já vem junto.
@@ -69,14 +47,73 @@ importa-biblioteca-externas:
 				./lib/include
 	@echo "As bibliotecas estáticas liblegivel, libhtref, libmemoria, liblaref e libestringue foram copiadas com sucesso."
 
+#=== === === === === === === === === === === === === === === ==== == === ==
+DEBUG_FLAGS = -D_MODO_DEBUG \
+				  -D_FILTRA_TODOS_ARQUIVOS \
+				  -D_REDIMENSIONA \
+				  -U_REDIMENSIONA
+DEPS = build/arraylist.o build/legivel.o build/tempo.o 
+SRCS = src/main.c src/hashtable.c
+
+cria-diretorios:
+	@mkdir --mode=0770 -p bin lib/include build/
+
+unit-tests: cria-diretorios
+	gcc -I ../utilitarios/include -D_UNIT_TESTS -Ofast -Wall \
+		-o bin/unit-tests src/main.c -Llib -llegivel
+
+debug:
+	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic \
+		-c -o build/variaveis_de_ambiente-debug.o src/variaveis_de_ambiente.c
+	@echo "Compilado objeto 'variaveis_de_ambiente-debug'."
+	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic \
+		-c -o build/filtro-debug.o src/filtro.c 
+	@echo "Compilado objeto 'filtro-debug'."
+	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic \
+		-c -o build/menu-debug.o src/menu.c 
+	@echo "Compilado objeto 'menu-debug'."
+	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic -D__debug__ \
+		-c -o build/classificacao-debug.o src/classificacao.c 
+	@echo "Compilado objeto 'classificação-debug'."
+	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -D__unit_tests__ -D__debug__ \
+		-Wall -pedantic -Wno-unused-function -Wno-main \
+		-c -o ./build/main-debug.o ./src/main.c 
+	@echo "Compilado objeto do 'main-debug'."
+	@gcc -I$(LIB_UTILS_HEADERS) -o ./bin/$(NOME)-debug -D__debug__ \
+		build/main-debug.o build/classificacao-debug.o \
+		build/variaveis_de_ambiente-debug.o build/filtro-debug.o \
+		build/menu-debug.o \
+		-L$(LIB_UTILS_BINS) -lhtref -llegivel -lmemoria -llaref -lestringue
+	@echo "Lincando ambos objetos, também verifica algum 'bad coding'."
+	
 
 #=== === === === === === === === === === === === === === === ==== == === ==
-release: cria-diretorios
-	gcc -Ofast -o bin/codigo_info src/main.c \
-   src/arraylist.c lib/utilitarios/legivel.c src/hashtable.c lib/utilitarios/tempo.c \
-   -I lib/utilitarios -Wall
+release:
+	@gcc -I./lib/include -O3 -Wall -pedantic -Wextra \
+		-c -o build/variaveis_de_ambiente.o src/variaveis_de_ambiente.c \
+		-L./lib -lestringue
+	@echo "Compilado objeto 'variaveis_de_ambiente'."
+	@gcc -I./lib/include -O3 -Wall -Wextra -pedantic -D__release__ \
+		-Wno-unused-function -Wno-main \
+		-c -o ./build/main.o ./src/main.c 
+	@echo "Compilado objeto do 'main'."
+	@gcc -I./lib/include -O3 -Oz -Wall -pedantic -Wextra \
+		-c -o build/menu.o src/menu.c 
+	@echo "Compilado objeto do 'menu'."
+	@gcc -I./lib/include -O3 -Oz -Wall -pedantic -Wextra \
+		-c -o build/classificacao.o src/classificacao.c
+	@echo "Compilado objeto do 'classificacao'."
+	@gcc -I./lib/include -O3 -Oz -Wall -pedantic -Wextra \
+		-c -o build/filtro.o src/filtro.c 
+	@echo "Compilado objeto do 'filtro'."
+	@gcc -I./lib/include -D__release__ \
+		-o./bin/$(NOME) build/main.o build/variaveis_de_ambiente.o \
+		build/menu.o build/classificacao.o build/filtro.o \
+		-L./lib -lhtref -llegivel -lmemoria -llaref -lestringue -lm
+	@echo "Lincando ambos objetos, também verifica algum 'bad coding'."
 
 
+#=== === === === === === === === === === === === === === === ==== == === ==
 variaveis_de_ambiente:
 	gcc -g3 -O0 -I$(LIB_UTILS_HEADERS) -Wall -pedantic -D__unit_tests__ \
 		-o ./bin/ut_$@ ./src/$@.c \
