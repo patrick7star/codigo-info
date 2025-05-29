@@ -5,11 +5,12 @@
  * consertar isso.
  */
 
+// Declaração das funções abaixo.
+#include "variaveis_de_ambiente.h"
+// Biblioteca padrão do C:
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-// Bibliotecas externas:
-#include "estringue.h"
 
 
 ListaStrings filtra_caminhos_de_path(void) 
@@ -23,12 +24,25 @@ ListaStrings filtra_caminhos_de_path(void)
    return reparte_ascii(conteudo, ":");
 }
 
+void mostra_conteudo_da_variavel_path(void)
+{
+   ListaStrings out = filtra_caminhos_de_path();
+   wchar_t INDICADOR = L'\u2794';
+
+   printf("\nTodos caminhos que pertecem ao PATH: \n\n");
+
+   for (int i = 1; (size_t)i <= (out).total; i++)
+      printf("\t\b\b%-5lc %s\n", INDICADOR, out.lista[i - 1]);
+   puts("\n");
+}
+
 
 #ifdef __unit_tests__
 /* == === === === === === === === === === === === === === === ==== == === =
 *                       Testes Unitários
 * == === === === === === === === === === === === === === === ==== == === */ 
 #include "teste.h"
+#include "locale.h"
 
 static void debug_lista_strings(ListaStrings* list) {
    printf("Lista de Strings: \n");
@@ -44,11 +58,18 @@ void verificacao_da_filtragem_de_caminhos_do_path(void)
    debug_lista_strings(&out);
 }
 
+void funcao_que_enlata_toda_visualizacao(void)
+   { mostra_conteudo_da_variavel_path(); }
+
 int main(int total, char* args[], char* envs[]) 
 {
+   char* lang = getenv("LANG");
+   setlocale(LC_CTYPE, lang);
+
    executa_testes_b(
-     true, 1, 
-        Unit(verificacao_da_filtragem_de_caminhos_do_path, true)
+     true, 2, 
+        Unit(verificacao_da_filtragem_de_caminhos_do_path, true),
+        Unit(funcao_que_enlata_toda_visualizacao, true)
    );
 
    return EXIT_SUCCESS;
