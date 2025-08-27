@@ -11,9 +11,16 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h>
+#include <wchar.h>
+// Biblioteca externa:
+#include "listaarray_ref.h"
+#include "impressao.h"
+
+extern char** environ;
 
 
-ListaStrings filtra_caminhos_de_path(void) 
+extern ListaStrings filtra_caminhos_de_path(void) 
 {
    char* conteudo = getenv("PATH"); 
    const ListaStrings VAZIO = { NULL, 0 };
@@ -24,25 +31,99 @@ ListaStrings filtra_caminhos_de_path(void)
    return reparte_ascii(conteudo, ":");
 }
 
-void mostra_conteudo_da_variavel_path(void)
+extern void mostra_conteudo_da_variavel_path(void)
 {
    ListaStrings out = filtra_caminhos_de_path();
    wchar_t INDICADOR = L'\u2794';
+   const char* AZUL = "\033[1;94m", *FIM = "\033[0m", *TAB = "\t\b\b";
+   const char* AMARELO = "\033[1;93m";
 
-   printf("\nTodos caminhos que pertecem ao PATH: \n\n");
+   printf("\nTodos caminhos que pertecem ao PATH:\n\n");
 
-   for (int i = 1; (size_t)i <= (out).total; i++)
-      printf("\t\b\b%-5lc %s\n", INDICADOR, out.lista[i - 1]);
+   for (int i = 1; (size_t)i <= (out).total; i++) {
+      printf(
+         "%s%s%-5lc%s %s%s%s\n", TAB, AMARELO, INDICADOR, 
+         FIM, AZUL, out.lista[i - 1], FIM
+      );
+   }
    puts("\n");
 }
 
+static char* generico_to_string(Generico e)
+   { return (char*)e; }
 
-#ifdef __unit_tests__
+static bool free_string(Generico e)
+   { free((char*)e); return true; }
+
+void listagem_de_todas_variaveis_de_usuario(void) {
+   char** cursor = environ;
+   int total = 0;
+   Vetor lista = cria_al();
+   const int sz = sizeof(char);
+   const int IGUAIS = 0;
+
+   while (*cursor != NULL) 
+   {
+      if (*cursor != NULL) 
+      {
+         char* igualdade = strchr(*cursor, '=');
+         ptrdiff_t quantia = igualdade - *cursor;
+         char* nome = malloc(UCHAR_MAX * sz);
+         
+         strncpy(nome, *cursor, quantia);
+         nome[quantia] = '\0';
+
+         if (strcmp(nome, "_") == IGUAIS) 
+            free(nome);
+         else
+            insere_al(lista, nome);
+      }
+      cursor++;
+      total++;
+   }
+
+   // listar(lista, generico_to_string);
+   printf("\nHá %d variáveis de ambiente configuradas.\n", total);
+   destroi_interno_al(lista, free_string);
+}
+
+void variaveis_definidas_pelo_usuario(void) {
+   char caminho[UCHAR_MAX];
+   const char* BASE = getenv("HOME");
+
+   sprintf(caminho, "%s/%s", BASE, ".profile");
+   puts(caminho);
+
+   FILE* arquivo = fopen(caminho, "rt");
+   ssize_t lido; const int sz = sizeof(int);
+   size_t TOTAL = UCHAR_MAX, contado = 0;
+   char* buffer = calloc(TOTAL, sz);
+   const char* const PATTERN = "export";
+
+   do {
+      lido = getline(&buffer, &TOTAL, arquivo);
+
+      // Busca por variáveis criadas(começam com 'export').
+      if (strstr(buffer, PATTERN) != NULL)
+         printf("[%03ld] %s\0\n", contado, buffer);
+
+      // Conta o total de linhas iteradas.
+      contado++;
+   } while(lido != -1);
+
+   puts("Chegou-se ao fim do arquivo.");
+   fclose(arquivo);
+}
+
+#if defined(__unit_tests__) && defined(__linux__)
 /* == === === === === === === === === === === === === === === ==== == === =
 *                       Testes Unitários
 * == === === === === === === === === === === === === === === ==== == === */ 
 #include "teste.h"
+#include "estringue.h"
 #include "locale.h"
+#include <stddef.h>
+#include <time.h>
 
 static void debug_lista_strings(ListaStrings* list) {
    printf("Lista de Strings: \n");
@@ -52,14 +133,29 @@ static void debug_lista_strings(ListaStrings* list) {
    puts("\n");
 }
 
-void verificacao_da_filtragem_de_caminhos_do_path(void)
+static void verificacao_da_filtragem_de_caminhos_do_path(void)
 {
    ListaStrings out = filtra_caminhos_de_path();
    debug_lista_strings(&out);
 }
 
-void funcao_que_enlata_toda_visualizacao(void)
+static void funcao_que_enlata_toda_visualizacao(void)
    { mostra_conteudo_da_variavel_path(); }
+
+static void sobre_variaveis_de_ambiente(void)
+{
+  listagem_de_todas_variaveis_de_usuario(); 
+  variaveis_definidas_pelo_usuario();
+}
+
+static void coloracoes_definidas_via_ls_colors(void) {
+   const char* CONTEUDO_VAR = getenv("LS_COLORS"), PADRAO = ':'; 
+   long length = strlen(CONTEUDO_VAR);
+   ListaStrings output;
+
+   output = split_at(CONTEUDO_VAR, ':');
+}
+
 
 int main(int total, char* args[], char* envs[]) 
 {
@@ -67,9 +163,11 @@ int main(int total, char* args[], char* envs[])
    setlocale(LC_CTYPE, lang);
 
    executa_testes_b(
-     true, 2, 
+     true, 4, 
         Unit(verificacao_da_filtragem_de_caminhos_do_path, true),
-        Unit(funcao_que_enlata_toda_visualizacao, true)
+        Unit(funcao_que_enlata_toda_visualizacao, true),
+        Unit(sobre_variaveis_de_ambiente, false),
+        Unit(coloracoes_definidas_via_ls_colors, true)
    );
 
    return EXIT_SUCCESS;

@@ -76,8 +76,7 @@ struct arquivo_info contabiliza_linhas(FILE* arquivo) {
    return coletado;
 }
 
-
-
+#ifdef __dead_code__
 static void visualiza_info_do_arquivo(char* caminho) {
    /* visualização do arquivo passado como argumento, todas informações 
     * codificadas para serem mostradas. */
@@ -93,8 +92,6 @@ static void visualiza_info_do_arquivo(char* caminho) {
    fclose(arq);
 }
 
-
-
 static void mostra_nome_do_arquivo(char* caminho) {
    /* formata melhor o nome do arquivo dado o caminho.
     * Nota: não cuida da validade do caminho. 
@@ -108,6 +105,7 @@ static void mostra_nome_do_arquivo(char* caminho) {
    // pulando o 'slash'...
    printf ("\narquivo: %s|%s|\n", recuo, ++nome_do_arquivo);
 }
+#endif
 
 static char* forma_caminho(char* base, char* entrada) {
    size_t n = strlen(entrada) + strlen(base) + 3;

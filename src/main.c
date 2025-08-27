@@ -29,7 +29,7 @@
 #include "menu.h"
 #include "classificacao.h"
 #include "filtro.h"
-
+#include "linque.h"
 
 
 /*   A parte abaixo se divide em dois modos: o primeiro é o a parte dos
@@ -45,8 +45,6 @@
  *                    da Combinação de Arquivos 
  *                          Acima
  * == === === === === === === === === === === === === === === ==== == === */ 
-
-
 
 void teste_simples_do_processa_projeto(char* args[], int t) {
    for (size_t k = 1; k <= t; k++) {

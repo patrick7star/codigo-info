@@ -5,6 +5,7 @@
 // Outros módulos do projeto:
 #include "filtro.h"
 #include "variaveis_de_ambiente.h"
+#include "linque.h"
 // Biblioteca do Linux(Glibc):
 #include <unistd.h>
 
@@ -45,14 +46,18 @@ static void folha_de_ajuda(void) {
       "volvimento.\n\tAs seguintes simples opções estão disponíveis, que "
       "foram as duas funcionalidades mencionadas acima:\n"
       "\t\t-P, --path-var\n\t\t\b lista todos caminhos anexados no caminho PATH.\n"
-      "\t\t-i, --info-projeto <RAIZ>\n\t\t\b informação processada de todos arquivos de tal projeto.\n\n", 
+      "\t\t-i, --info-projeto <RAIZ>\n\t\t\b informação processada de todos arquivos de tal projeto.\n" 
+      "\t\t-L, --repositorio-links \n\t\t\b os linques dos repostiórios de "
+      "\n\t\tlinques de programas feitos, e se os linques ali, ainda são válidos"
+      // Quebra-de-linha no final.
+      "\n\n",
       RECUO, PROG, RECUO, PROG, PROG, RECUO
    );
 }
 
 extern void menu_interface_do_programa(char* args[], int total)
 {
-   const char* const CURTAS = "hi::P::";
+   const char* const CURTAS = "hi::P::L::";
    int result = getopt(total, args, CURTAS);
    const int Falhou = -1;
 
@@ -65,12 +70,17 @@ extern void menu_interface_do_programa(char* args[], int total)
          folha_de_ajuda();
       else if (opcao == 'P')
          mostra_conteudo_da_variavel_path();
-      else if (opcao == 'i') 
-      {
+
+      else if (opcao == 'i') {
          char* caminho = args[optind];
 
          DirInfo agregado = processa_projeto(caminho);
          visualiza_diretorio_info(&agregado);
+
+      } else if (opcao == 'L') {
+         putchar('\n');
+         info_sobre_repositorio_de_linques();
+         putchar('\n');
       }
 
       #ifdef __debug__
