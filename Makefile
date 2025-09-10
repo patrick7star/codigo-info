@@ -24,6 +24,7 @@ backups:
 	@echo -e "\nvisualizar todos backups deste projeto:"
 	@ls --sort=time -1 ../versions/codigo-info*.tar
 
+
 # Apenas funciona na máquina do desenvolvedor do projeto. Você obviamente
 # não precisa fazer isso, pois os binários necessários já vem junto.
 importa-biblioteca-externas:
@@ -56,7 +57,8 @@ DEPS = build/arraylist.o build/legivel.o build/tempo.o
 SRCS = src/main.c src/hashtable.c
 
 cria-diretorios:
-	@mkdir --mode=0770 -p bin lib/include build/
+	@mkdir --mode=0770 -p bin/tests/ lib/include build/
+	@echo "Todos diretórios estão estruturados."
 
 unit-tests: cria-diretorios
 	gcc -I ../utilitarios/include -D_UNIT_TESTS -Ofast -Wall \
@@ -91,7 +93,7 @@ debug:
 	
 
 #=== === === === === === === === === === === === === === === ==== == === ==
-release:
+release: cria-diretorios
 	@gcc -I./lib/include -O3 -Wall -pedantic -Wextra \
 		-c -o build/variaveis_de_ambiente.o src/variaveis_de_ambiente.c \
 		-L./lib -lestringue
@@ -103,6 +105,9 @@ release:
 	@gcc -I./lib/include -O3 -Oz -Wall -pedantic -Wextra \
 		-c -o build/menu.o src/menu.c 
 	@echo "Compilado objeto do 'menu'."
+	@gcc -I./lib/include -O3 -Oz -Wall -pedantic \
+		-c -o build/linque.o src/linque.c
+	@echo "Compilado objeto do 'linque'."
 	@gcc -I./lib/include -O3 -Oz -Wall -pedantic -Wextra \
 		-c -o build/classificacao.o src/classificacao.c
 	@echo "Compilado objeto do 'classificacao'."
@@ -111,9 +116,9 @@ release:
 	@echo "Compilado objeto do 'filtro'."
 	@gcc -I./lib/include -D__release__ \
 		-o./bin/$(NOME) build/main.o build/variaveis_de_ambiente.o \
-		build/menu.o build/classificacao.o build/filtro.o \
+		build/menu.o build/classificacao.o build/filtro.o build/linque.o \
 		-L./lib -lhtref -llegivel -lmemoria -llaref -lestringue -lm
-	@echo "Lincando ambos objetos, também verifica algum 'bad coding'."
+	@echo "Lincando ambos objetos, então, compilando binário."
 
 
 #=== === === === === === === === === === === === === === === ==== == === ==
