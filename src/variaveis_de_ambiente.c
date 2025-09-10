@@ -15,7 +15,6 @@
 #include <wchar.h>
 // Biblioteca externa:
 #include "listaarray_ref.h"
-#include "impressao.h"
 
 extern char** environ;
 
@@ -49,11 +48,11 @@ extern void mostra_conteudo_da_variavel_path(void)
    puts("\n");
 }
 
-static char* generico_to_string(Generico e)
-   { return (char*)e; }
+// static char* generico_to_string(Generico e)
+//    { return (char*)e; }
 
-static bool free_string(Generico e)
-   { free((char*)e); return true; }
+// static bool free_string(Generico e)
+//   { free((char*)e); return true; }
 
 void listagem_de_todas_variaveis_de_usuario(void) {
    char** cursor = environ;
@@ -82,9 +81,11 @@ void listagem_de_todas_variaveis_de_usuario(void) {
       total++;
    }
 
-   // listar(lista, generico_to_string);
    printf("\nHá %d variáveis de ambiente configuradas.\n", total);
-   destroi_interno_al(lista, free_string);
+   // NOTA: É preciso desalocar a memória alocada. Terei que desabilitar tal 
+   // instrução aqui, pois ainda não consegui deixar estável na biblioteca
+   // que importei pra este projeto.
+   // destroi_interno_al(lista, free_string);
 }
 
 void variaveis_definidas_pelo_usuario(void) {
@@ -105,7 +106,7 @@ void variaveis_definidas_pelo_usuario(void) {
 
       // Busca por variáveis criadas(começam com 'export').
       if (strstr(buffer, PATTERN) != NULL)
-         printf("[%03ld] %s\0\n", contado, buffer);
+         printf("[%03ld] %s\n", contado, buffer);
 
       // Conta o total de linhas iteradas.
       contado++;

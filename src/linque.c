@@ -92,7 +92,11 @@ static char* junta_caminhos(char* path_a, char* path_b) {
 /* Concatena dois caminhos, na ordem dos parâmetros listados. Ele aloca 
  * memória na heap, portanto é preciso que o 'caller' libere posteriormente.
  */
-   int length = strlen(path_b) + strlen(path_a);
+   const int GARANTIA = 5;
+   /* Coloco tal garantia, pois às vezes há um problem com buffer overflow.
+    * Mais tarde, eu reviso o problema, então computo o acrescimo faltante
+    * certo. */
+   int length = strlen(path_b) + strlen(path_a) + GARANTIA;
    const int sz = sizeof(char);
    char* output = calloc(length, sz);
 
@@ -125,7 +129,7 @@ void info_sobre_repositorio_de_linques(void) {
 
    DIR* iteracao = opendir(caminho); 
    struct dirent* atual;
-   char* nome, *aux;
+   char* nome, *aux, *base = (char*)caminho;
    wchar_t status;
 
    for (atual=readdir(iteracao); atual != NULL; atual=readdir(iteracao))
@@ -134,7 +138,7 @@ void info_sobre_repositorio_de_linques(void) {
          continue; 
 
       nome = (char*)(*atual).d_name;
-      aux = junta_caminhos((char*)caminho, nome);
+      aux = junta_caminhos(base, nome);
 
       if (lincado_a_algo(aux)) 
          status = VALIDO;
