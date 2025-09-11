@@ -1,4 +1,8 @@
-/* Verifica várias coisas relacionadas a linques no sistema. */
+/* Verifica várias coisas relacionadas a linques no sistema. Eu crio um
+ * repositório(um diretório), ligado há uma variável 'LINKS/ou LINQUES'. Lá,
+ * coloco todos programas uteis que chamo por terminal, ou aplicações, 
+ * especialmente CLI, que produzo. 
+ */
 
 #include "linque.h"
 // Biblioteca padrão do C:
@@ -9,12 +13,16 @@
 #include <errno.h>
 #include <string.h>
 #include <stdint.h>
+#include <assert.h>
 // API do sistema:
 #include <dirent.h>
 #include <sys/types.h>
 #include <unistd.h>
 #include <sys/stat.h>
+// Bibliiotecas externas:
+#include "impressao.h"
 
+// Caractéres Unicode de representão itens a serem listados.
 const wchar_t VALIDO   = L'\U0001f7e2';
 const wchar_t INVALIDO = L'\u2b55';
 
@@ -116,6 +124,29 @@ static bool pular_entradas_desnecessarias(struct dirent* obj) {
    return (strcmp(nome, CWD) == 0 || strcmp(nome, PARENT) == 0);
 }
 
+static void status_dos_linques_avaliados(int validos, int invalidos) {
+   int total = validos + invalidos;
+   const int N = 150;
+   char validos_str[N], invalidos_str[N];
+   char* ptr_a = validos_str, *ptr_b = invalidos_str;
+   char total_str[N];
+
+   memset(validos_str, '\0', N);
+   memset(invalidos_str, '\0', N);
+   sprintf(validos_str, "%2d", validos);
+   sprintf(invalidos_str, "%2d", invalidos);
+   sprintf(total_str, "%d", total);
+
+   ptr_a = colori_string_ii(ptr_a, Verde);
+   ptr_b = colori_string_ii(ptr_b, Vermelho);
+   aplica_formatacao_ii(total_str, AzulMarinho, Sublinhado);
+
+   printf(
+      "\nForam contados %s linques; Balança geral: %s |%s.\n",
+      total_str, validos_str, invalidos_str
+   );
+}
+
 void info_sobre_repositorio_de_linques(void) {
 /* Lista todas entradas do diretório que representa o repositório de linques,
  * se houver algum, ou a variável que direciona ela estiver bem definida.
@@ -131,6 +162,10 @@ void info_sobre_repositorio_de_linques(void) {
    struct dirent* atual;
    char* nome, *aux, *base = (char*)caminho;
    wchar_t status;
+   int validos = 0, invalidos = 0;
+
+   // Deixa um espaço de uma linha da listagem de itens.
+   putchar('\n');
 
    for (atual=readdir(iteracao); atual != NULL; atual=readdir(iteracao))
    {
@@ -140,14 +175,19 @@ void info_sobre_repositorio_de_linques(void) {
       nome = (char*)(*atual).d_name;
       aux = junta_caminhos(base, nome);
 
-      if (lincado_a_algo(aux)) 
+      if (lincado_a_algo(aux)) {
          status = VALIDO;
-      else
+         validos++;
+
+      } else {
          status = INVALIDO;
+         invalidos++;
+      }
 
       printf("\t\b\b%lc %s\n", status, nome);
       free(aux);
    }
+   status_dos_linques_avaliados(validos, invalidos);
 }
 
 #if defined(__linux__) && defined(__unit_tests__)
