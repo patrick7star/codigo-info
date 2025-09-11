@@ -36,6 +36,7 @@ importa-biblioteca-externas:
 				$(LIB_UTILS_ST_BINS)/libteste.a				\
 				$(LIB_UTILS_ST_BINS)/libtempo.a				\
 				$(LIB_UTILS_ST_BINS)/libterminal.a			\
+				$(LIB_UTILS_ST_BINS)/libimpressao.a			\
 				./lib/
 	@cp -uv	$(LIB_UTILS_HEADERS)/legivel.h						\
 				$(LIB_UTILS_HEADERS)/hashtable_ref.h				\
@@ -45,6 +46,7 @@ importa-biblioteca-externas:
 				$(LIB_UTILS_HEADERS)/teste.h							\
 				$(LIB_UTILS_HEADERS)/tempo.h							\
 				$(LIB_UTILS_HEADERS)/terminal.h						\
+				$(LIB_UTILS_HEADERS)/impressao.h						\
 				./lib/include
 	@echo "As bibliotecas estáticas liblegivel, libhtref, libmemoria, liblaref e libestringue foram copiadas com sucesso."
 
@@ -64,6 +66,7 @@ unit-tests: cria-diretorios
 	gcc -I ../utilitarios/include -D_UNIT_TESTS -Ofast -Wall \
 		-o bin/unit-tests src/main.c -Llib -llegivel
 
+#=== === === === === === === === === === === === === === === ==== == === ===
 debug:
 	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic \
 		-c -o build/variaveis_de_ambiente-debug.o src/variaveis_de_ambiente.c
@@ -77,22 +80,26 @@ debug:
 	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic -D__debug__ \
 		-c -o build/classificacao-debug.o src/classificacao.c 
 	@echo "Compilado objeto 'classificação-debug'."
-	@gcc -g3 -O0 -Wall -pedantic \
+	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic \
 		-c -o build/linque-debug.o src/linque.c 
 	@echo "Compilado objeto 'linque-debug'."
 	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -D__unit_tests__ -D__debug__ \
 		-Wall -pedantic -Wno-unused-function -Wno-main \
 		-c -o ./build/main-debug.o ./src/main.c 
 	@echo "Compilado objeto do 'main-debug'."
-	@gcc -I$(LIB_UTILS_HEADERS) -o ./bin/$(NOME)-debug -D__debug__ \
-		build/main-debug.o build/classificacao-debug.o \
-		build/variaveis_de_ambiente-debug.o build/filtro-debug.o \
-		build/menu-debug.o build/linque-debug.o \
-		-L$(LIB_UTILS_BINS) -lhtref -llegivel -lmemoria -llaref -lestringue 
+	@gcc -I$(LIB_UTILS_HEADERS) -D__debug__ \
+		-o ./bin/$(NOME)-debug \
+			build/main-debug.o build/classificacao-debug.o \
+			build/variaveis_de_ambiente-debug.o build/filtro-debug.o \
+			build/menu-debug.o build/linque-debug.o \
+		-L$(LIB_UTILS_BINS) -lhtref -llegivel -lmemoria -llaref -lestringue \
+			-limpressao -lterminal
 	@echo "Lincando ambos objetos, também verifica algum 'bad coding'."
 	
+#=== === === === === === === === === === === === === === === ==== == === ===
+HEADERS_RLS = ./lib/include
+LIB_RLS		= ./lib
 
-#=== === === === === === === === === === === === === === === ==== == === ==
 release: cria-diretorios
 	@gcc -I./lib/include -O3 -Wall -pedantic -Wextra \
 		-c -o build/variaveis_de_ambiente.o src/variaveis_de_ambiente.c \
@@ -105,19 +112,22 @@ release: cria-diretorios
 	@gcc -I./lib/include -O3 -Oz -Wall -pedantic -Wextra \
 		-c -o build/menu.o src/menu.c 
 	@echo "Compilado objeto do 'menu'."
-	@gcc -I./lib/include -O3 -Oz -Wall -pedantic \
-		-c -o build/linque.o src/linque.c
-	@echo "Compilado objeto do 'linque'."
 	@gcc -I./lib/include -O3 -Oz -Wall -pedantic -Wextra \
 		-c -o build/classificacao.o src/classificacao.c
 	@echo "Compilado objeto do 'classificacao'."
 	@gcc -I./lib/include -O3 -Oz -Wall -pedantic -Wextra \
 		-c -o build/filtro.o src/filtro.c 
 	@echo "Compilado objeto do 'filtro'."
-	@gcc -I./lib/include -D__release__ \
-		-o./bin/$(NOME) build/main.o build/variaveis_de_ambiente.o \
-		build/menu.o build/classificacao.o build/filtro.o build/linque.o \
-		-L./lib -lhtref -llegivel -lmemoria -llaref -lestringue -lm
+	@gcc -I$(HEADERS_RLS) -O3 -Oz -Wall -pedantic -Wextra -Werror \
+		-c -o build/linque.o src/linque.c
+	@echo "Compilado objeto do 'linque'."
+	@gcc -I$(HEADERS_RLS) -D__release__ \
+		-o./bin/$(NOME) \
+			build/main.o build/variaveis_de_ambiente.o \
+			build/menu.o build/classificacao.o build/filtro.o \
+			build/linque.o \
+		-L$(LIB_RLS) -lhtref -llegivel -lmemoria -lestringue -lm -limpressao \
+			-lterminal -llaref
 	@echo "Lincando ambos objetos, então, compilando binário."
 
 
