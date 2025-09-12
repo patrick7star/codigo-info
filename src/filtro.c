@@ -7,6 +7,9 @@
 #include <time.h>
 #include <stdio.h>
 #include <assert.h>
+#include <limits.h>
+#include <stdlib.h>
+#include <errno.h>
 // Biblioteca padrão Unix:
 #include <dirent.h>
 #include <unistd.h>
@@ -22,6 +25,7 @@
 // Variáveis globais do escopo global.
 static time_t inicio;
 static bool iniciado = false;
+// enum Results { Okay = 0, Failed = -1 };
 
 typedef struct arquivo_info { 
    // linhas não-vázias e vázias:
@@ -31,6 +35,7 @@ typedef struct arquivo_info {
    // maior coluna de caractéres do arquivo:
    uint16_t maxima_coluna;
 } ArquivoInfo;
+
 
 
 struct arquivo_info contabiliza_linhas(FILE* arquivo) {
@@ -259,9 +264,6 @@ extern vetor_t* filtra_todos_arquivos_visualiza(char* caminho) {
    return coletador;
 }
 
-
-
-
 char* hashtable_formatacao(HashTable m) {
    IteradorHT iter = cria_iter_ht(m);
    const int sz = sizeof(char), QTD = 4000;
@@ -298,6 +300,17 @@ char* hashtable_formatacao(HashTable m) {
 void visualiza_diretorio_info (DiretorioInfo* i) {
    HashTable dicio = (*i).todos_tipos;
    char* frequencias = hashtable_formatacao (dicio);
+   char caminho_normal[PATH_MAX];
+
+   // Tenta resolve atalhos como "." ou "..".
+   if (realpath(i->caminho_do_projeto, caminho_normal) == NULL) {
+      perror(strerror(errno));
+      abort();
+   }
+
+   #ifdef __debug__
+   printf("PATH_MAX: %u bytes\n", PATH_MAX);
+   #endif
 
    printf (
       "\n  Caminho: '%s'\n"
@@ -305,7 +318,7 @@ void visualiza_diretorio_info (DiretorioInfo* i) {
       "  Média de linhas por arquivo: %0.1f\n"
       "  Total de linhas: %s\n"
       "  Tipos de arquivos: %s\n\n",
-      i->caminho_do_projeto,
+      caminho_normal,
       valor_legivel (i->total_de_arquivos),
       i->media_de_linhas,
       valor_legivel (i->total_de_linhas),
