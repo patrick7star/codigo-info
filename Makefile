@@ -47,6 +47,7 @@ importa-biblioteca-externas:
 				$(LIB_UTILS_HEADERS)/tempo.h							\
 				$(LIB_UTILS_HEADERS)/terminal.h						\
 				$(LIB_UTILS_HEADERS)/impressao.h						\
+				$(LIB_UTILS_HEADERS)/macros.h							\
 				./lib/include
 	@echo "As bibliotecas estáticas liblegivel, libhtref, libmemoria, liblaref e libestringue foram copiadas com sucesso."
 
@@ -71,10 +72,10 @@ debug:
 	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic \
 		-c -o build/variaveis_de_ambiente-debug.o src/variaveis_de_ambiente.c
 	@echo "Compilado objeto 'variaveis_de_ambiente-debug'."
-	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic \
+	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic -D__debug__ \
 		-c -o build/filtro-debug.o src/filtro.c 
 	@echo "Compilado objeto 'filtro-debug'."
-	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic \
+	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic -D__debug__ \
 		-c -o build/menu-debug.o src/menu.c 
 	@echo "Compilado objeto 'menu-debug'."
 	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic -D__debug__ \
@@ -100,7 +101,7 @@ debug:
 HEADERS_RLS = ./lib/include
 LIB_RLS		= ./lib
 
-release: cria-diretorios
+codigoinfo: cria-diretorios
 	@gcc -I./lib/include -O3 -Wall -pedantic -Wextra \
 		-c -o build/variaveis_de_ambiente.o src/variaveis_de_ambiente.c \
 		-L./lib -lestringue
@@ -141,3 +142,71 @@ variaveis_de_ambiente:
 linque:
 	gcc -g3 -O0 -I$(LIB_UTILS_HEADERS) -Wall -pedantic -D__unit_tests__ \
 		-o ./bin/ut_$@ ./src/$@.c \
+
+classificacao2:
+	gcc -I/usr/include/libxml2 -o bin/tests/ut_classificacao2 src/classificacao2.c -lxml2
+
+#=== === === === === === === === === === === === === === === ==== == === ==
+# Binários de ambos programas que foram recentemente anexados a este projeto.
+LIB_DBG = $(CCODES)/utilitarios/bin/shared
+HEADERS_DBG = $(CCODES)/utilitarios/include
+HEADERS_RLS = ./lib/include
+
+cria-raiz-programas:
+	@mkdir -p build/cmd-frequencia build/ build/pacotes-externos/
+	@mkdir -p bin/programs
+	@echo "Diretório dos programas criados com sucesso."
+
+cmd-frequencia-debug:
+	clang++ -O0 -g3 -c -o \
+		build/cmd-frequencia/main-debug.o cmd-frequencia/src/main.cpp
+	clang++ -std=c++17 -O0 -g3 -c -I$(HEADERS_DBG) -o \
+		build/cmd-frequencia/lincagem-debug.o cmd-frequencia/src/lincagem.cpp
+	clang++ -std=c++17 -O0 -g3 -I$(HEADERS_DBG) \
+		-c -o build/cmd-frequencia/extracao_comando-debug.o \
+				cmd-frequencia/src/extracao_comando.cpp
+	@echo "Objeto lincagem-debug" compilado com sucesso.
+	clang++ -I$(HEADERS_DBG) \
+		-o bin/programs/cmd-frequencia-debug \
+			build/cmd-frequencia/main-debug.o \
+			build/cmd-frequencia/lincagem-debug.o \
+			build/cmd-frequencia/extracao_comando-debug.o \
+		-L$(LIB_DBG) -lteste -ltempo -llegivel -lterminal
+
+pacotes-externos-debug:
+	@cd pacotes-externos && \
+		cargo build --target-dir ../bin/programs/target-pe/
+	@echo "Projeto Rust compilado com sucesso."
+	@ln -T bin/programs/target-pe/debug/cargo-listagem \
+			bin/programs/pacotes-externos-debug
+	@echo "Hard linque ligando binário criado."
+		
+pacotes-externos-release: cria-raiz-programas
+	@cd pacotes-externos && \
+		cargo build -q --release --target-dir ../build/pacotes-externos/
+	@echo "Projeto Rust compilado com sucesso."
+	@ln -T build/pacotes-externos/release/cargo-listagem \
+			bin/programs/pacotes-externos
+	@echo "Hard linque ligando binário criado."
+
+cmd-frequencia-release: cria-raiz-programas
+	@clang++ -O3 -c -o \
+		build/cmd-frequencia/main.o cmd-frequencia/src/main.cpp
+	@echo "Objeto 'main' compilado com sucesso."
+	@clang++ -std=c++17 -O3 -c -I$(HEADERS_RLS) -o \
+		build/cmd-frequencia/lincagem.o cmd-frequencia/src/lincagem.cpp
+	@echo "Objeto 'lincagem' compilado com sucesso."
+	@clang++ -std=c++17 -O3 -I$(HEADERS_RLS) \
+		-c -o build/cmd-frequencia/extracao-comando.o \
+				cmd-frequencia/src/extracao_comando.cpp
+	@echo "Objeto 'extração-comando' compilado com sucesso."
+	@clang++ -I$(HEADERS_RLS) \
+		-o bin/programs/cmd-frequencia \
+			build/cmd-frequencia/main.o \
+			build/cmd-frequencia/lincagem.o \
+			build/cmd-frequencia/extracao-comando.o \
+		-Llib/ -lteste -ltempo -llegivel -lterminal
+	@echo "Lincados num binário chamado 'cmd-frequencia'."
+
+release: codigoinfo pacotes-externos-release cmd-frequencia-release
+	@echo "Todo o programa foi compilado com sucesso."
