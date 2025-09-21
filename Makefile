@@ -133,6 +133,8 @@ codigoinfo: cria-diretorios
 
 
 #=== === === === === === === === === === === === === === === ==== == === ==
+#						Testes Unitários de Cada Módulo
+#=== === === === === === === === === === === === === === === ==== == === ==
 variaveis_de_ambiente:
 	gcc -g3 -O0 -I$(LIB_UTILS_HEADERS) -Wall -pedantic -D__unit_tests__ \
 		-o ./bin/ut_$@ ./src/$@.c \
@@ -145,6 +147,13 @@ linque:
 
 classificacao2:
 	gcc -I/usr/include/libxml2 -o bin/tests/ut_classificacao2 src/classificacao2.c -lxml2
+
+menu-test:
+	gcc -I$(HEADERS_DBG) -D__unit_tests__ \
+		-o bin/tests/ut_menu build/linque.o build/variaveis_de_ambiente.o \
+			build/filtro.o build/classificacao.o src/menu.c \
+		-L$(LIB_DBG) -lhtref -llegivel -lmemoria -llaref -lestringue \
+			-limpressao -lterminal
 
 #=== === === === === === === === === === === === === === === ==== == === ==
 # Binários de ambos programas que foram recentemente anexados a este projeto.
@@ -185,7 +194,7 @@ pacotes-externos-release: cria-raiz-programas
 	@cd pacotes-externos && \
 		cargo build -q --release --target-dir ../build/pacotes-externos/
 	@echo "Projeto Rust compilado com sucesso."
-	@ln -T build/pacotes-externos/release/cargo-listagem \
+	@ln -f -T build/pacotes-externos/release/cargo-listagem \
 			bin/programs/pacotes-externos
 	@echo "Hard linque ligando binário criado."
 
