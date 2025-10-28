@@ -6,14 +6,12 @@
  sintaxe colorida e organizando versões numa simples linha.
 */
 
-mod linque;
+mod historico;
 
 use std::collections::HashMap;
 use std::io::{Result as ResultadoIO};
 use std::path::{Path, PathBuf};
 use std::fs::read_dir;
-// Outros módulos deste projeto:
-use crate::linque::{linca_executaveis};
 
 type Pacote = HashMap<String, Vec<String>>;
 type Par = (String, Vec<String>);
@@ -174,22 +172,21 @@ fn main() {
     * para obter o mapa com os dados, e organizar-lô, de maneira bem
     * mais bonita, do que sua versão alinhada de 'debug'.
     */
-   let todo_repositoiro = organizando_fontes_e_suas_versoes();
+   let todo_repositorio = organizando_fontes_e_suas_versoes();
 
    println!(
       "\nDepedências baixadas no computador({} \
       pacotes distintos, {} no total):",
-      todo_repositoiro.as_ref().unwrap().len(),
+      todo_repositorio.as_ref().unwrap().len(),
       // soma de todas versões, é o total de pacotes baixados.
-      todo_repositoiro.as_ref().unwrap()
+      todo_repositorio.as_ref().unwrap()
       .iter().map(|(_, array)| array.len())
       .sum::<usize>()
    );
-   listagem_das_fontes(todo_repositoiro.unwrap());
+   listagem_das_fontes(todo_repositorio.unwrap());
    
    // barra de termino de página.
    println!("\n{}\n", &"-".repeat(60));
-   linca_executaveis("pacotes-externos");
 }
 
 #[cfg(test)]
