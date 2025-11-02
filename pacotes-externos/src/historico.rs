@@ -12,11 +12,9 @@ use std::fmt::{Formatter, Result as ResultFmt, Debug, Display};
 use std::time::{SystemTime};
 use std::collections::{VecDeque};
 use crate::todos_diretorios_fontes;
-use std::thread::{sleep};
-use std::path::{PathBuf};
 use std::time::{Duration};
 
-trait Serializador {
+pub trait Serializador {
    /// Transforma o objeto numa array de bytes. 
    fn serializa(&self) -> Vec<u8>;
 
@@ -26,12 +24,12 @@ trait Serializador {
 
 /** O tipo de dado consiste em, primeiro, o nome do pacote, seguido de 
  * sua versão.*/
-struct LibRust(String, String);
+pub struct LibRust(String, String);
 
 /** O conceito 'histórico' consiste na lista de LibRust atualmente, e 
  * quando isso foi registrado. A quantidade de itens é levada pelo o
  * comprimento da 'lista'. */
-struct Historico { lista: Vec<LibRust>, selo: SystemTime }
+pub struct Historico { lista: Vec<LibRust>, selo: SystemTime }
 
 /* == === === === === === === === === === === === === === === ==== == === ===
  *                               Histórico 
@@ -188,117 +186,6 @@ impl Serializador for LibRust
 
       Self::novo(nome, versao)
    }
-}
-
-/* == === === === === === === === === === === === === === === ==== == === ===
- *                      Banco de Dados 
- * == === === === === === === === === === === === === === === ==== === === */
-use std::fs::{OpenOptions};
-use std::io::{self, Write};
-
-const BANCO:&'static str = "./banco.dat";
-
-type Particao           = Vec<u8>;
-type FilaDeParticoes    = VecDeque<Particao>;
-type FilaDeHistoricos   = VecDeque<Historico>;
-type FilaDeBytes        = VecDeque<u8>;
-
-
-/** Grava um 'histórico' passado na memória não volátil. O retorno, em bytes,
- * de quanto foi gravado é retornado se algum erro não acontecer. */
-pub fn registra_um_historico(obj: Historico) -> io::Result<usize> {
-   let mut banco = {
-      OpenOptions::new()
-      .create(true).append(true)
-      .open(BANCO)?
-   };
-   let dados = obj.serializa();
-   let total: u16 = dados.len().try_into().unwrap();
-   // Bytes do valor total de bytes. Sim, ele também tem que ser decodificado
-   // e então registrado.
-   let bytes = total.to_le_bytes();
-       
-   // Primeiro os bytes que 
-   banco.write(bytes.as_slice());
-   banco.write(dados.as_slice())
-}
-
-/** Remove e retira os bytes iniciais que indicam quantos byte abaixo fazem
- * parte de uma instância de dados. Tais bytes são removidos. O retorno
- * são somente os bytes que compoem a instância. */
-fn le_inteiro_dos_bytes_iniciais(input: &mut FilaDeBytes) -> u16 {
-   let mut output = [0u8, 0u8];
-
-   output[0] = input.pop_front().unwrap();
-   output[1] = input.pop_front().unwrap();
-
-   u16::from_le_bytes(output)
-}
-
-/** Dado uma fila de sucessivos bytes, ele arranca os bytes apenas relevante
- * a primeira instãncia da interação. */
-fn extrai_bytes_da_proxima_instancia (input: &mut FilaDeBytes) 
-  -> FilaDeBytes
-{
-   let mut saida = FilaDeBytes::new();
-   let mut total = le_inteiro_dos_bytes_iniciais(input); 
-   let mut byte: u8;
-
-   while total > 0 {
-      byte = input.pop_front().unwrap();
-      saida.push_back(byte);
-      total -= 1;
-   }
-   saida
-}
-
-fn enfileira(input: Vec<u8>) -> FilaDeBytes {
-   let n = input.len();
-   let mut output = FilaDeBytes::with_capacity(n);
-
-   input.into_iter()
-   .for_each(|b| output.push_back(b));
-   output
-}
-
-fn enlista(mut input: FilaDeBytes) -> Particao {
-   let n = input.len();
-   let mut output = Vec::<u8>::with_capacity(n);
-
-   while let Some(byte) = input.pop_front()
-      { output.push(byte); }
-   output
-}
-
-fn particiona_bytes_em_bytes_de_historicos(input: Vec<u8>) 
-  -> FilaDeParticoes
-{
-   let mut output = FilaDeParticoes::new(); 
-   let mut particao: FilaDeBytes;
-   let mut fila = enfileira(input);
-
-   assert!(!fila.is_empty());
-
-   while !fila.is_empty() {
-      particao = extrai_bytes_da_proxima_instancia(&mut fila);
-      output.push_back(enlista(particao));
-   }
-   output
-}
-
-pub fn carrega_historicos() -> io::Result<FilaDeHistoricos> {
-   // Capacidade incial:
-   const N: usize = 1e3 as usize;
-
-   let mut output = FilaDeHistoricos::new();
-   let mut banco = OpenOptions::new().read(true).open(BANCO)?;
-   let mut dados = Vec::<u8>::with_capacity(N);
-
-   banco.read_to_end(&mut dados)?;
-   // Agora, a parte do processamento em lote ...
-   for lote in particiona_bytes_em_bytes_de_historicos(dados)
-      { output.push_back(Historico::deserializa(lote)); }
-   Ok(output)
 }
 
 /* == === === === === === === === === === === === === === === ==== == === ===
@@ -499,6 +386,8 @@ fn ambas_listas_com_mesmos_itens
 mod tests {
    
    use super::*;
+   use std::thread::{sleep};
+   use std::path::{PathBuf};
 
    #[test]
    fn rascunho() {
@@ -559,40 +448,5 @@ mod tests {
       println!("{output:?}");
 
       assert_eq!(input, output);
-   }
-
-   fn registro_realizados_sucessivamentes() {
-      let pausa = Duration::from_secs(3);
-
-      for _ in 1..=6 {
-         let snap = Historico::gera();
-
-         registra_um_historico(snap).unwrap();
-         sleep(pausa);
-         println!("Mais um registro realizado no 'mass storage'.");
-      }
-   }
-
-   #[test]
-   fn grava_um_historico_e_recarrega_novamente() {
-      let input = Historico::gera();
-
-      registra_um_historico(input);
-      let output = carrega_historicos();
-
-      for part in output
-         { println!("{:?}", part); }
-
-      std::fs::remove_file(BANCO).unwrap();
-   }
-
-   #[test]
-   fn operacoes_de_registro_e_carregamento() {
-      let _= registro_realizados_sucessivamentes();
-      let mut output = carrega_historicos().unwrap();
-
-      while let Some(history) = output.pop_front()
-         { println!("{:?}", history); }
-      std::fs::remove_file(BANCO).unwrap();
    }
 }

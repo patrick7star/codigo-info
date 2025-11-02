@@ -7,11 +7,17 @@
 */
 
 mod historico;
+mod banco;
+mod menu;
 
 use std::collections::HashMap;
 use std::io::{Result as ResultadoIO};
 use std::path::{Path, PathBuf};
 use std::fs::read_dir;
+// Ferramental dos módulos criados:
+use historico::{Historico};
+use banco::{registra_um_historico, carrega_historicos};
+use menu::{Opcoes, opcoes_selecionadas, manual_de_ajuda};
 
 type Pacote = HashMap<String, Vec<String>>;
 type Par = (String, Vec<String>);
@@ -167,7 +173,10 @@ fn ordena_repositorio(mut repositorio: Pacote) -> Pares {
    array
 }
 
-fn main() {
+fn desenha_barra_delimitadora_da_listagem() 
+   { println!("\n{}\n", &"-".repeat(60)); }
+
+fn mostra_listagem_dos_pacotes_baixados() {
    /* preciso apenas chamar a função 'organizando_fontes_e_suas_versoes',
     * para obter o mapa com os dados, e organizar-lô, de maneira bem
     * mais bonita, do que sua versão alinhada de 'debug'.
@@ -183,11 +192,48 @@ fn main() {
       .iter().map(|(_, array)| array.len())
       .sum::<usize>()
    );
+
    listagem_das_fontes(todo_repositorio.unwrap());
-   
-   // barra de termino de página.
-   println!("\n{}\n", &"-".repeat(60));
+   desenha_barra_delimitadora_da_listagem();
+
 }
+
+
+fn main() {
+   /* O menu de todas opções personalizaveis que este programa pode promover
+    * até o momento. Futuramente, obviamente haverá bem mais. Por enquanto
+    * é apenas isso. Veja também, que a listagem, que é a funcionalidade 
+    * principal do programa. Se transformou numa opção obrigatoria prá 
+    * executar. É claro que, pode ser que, seja ativada quando não houver 
+    * opção, ou talvez a 'ajuda' seja a padrão. Ainda não tem certezea de 
+    * qual usar. */
+   for opcao in opcoes_selecionadas() {
+      match opcao {
+         Opcoes::Listagem | Opcoes::Nenhuma => 
+            { mostra_listagem_dos_pacotes_baixados(); }
+
+         Opcoes::RealizaResgistro => {
+            let snap = Historico::gera();
+
+            if let Ok(size) = registra_um_historico(snap)
+               { println!("Foi gravado um registro de {} bytes.", size); }
+             else
+              { println!("Nenhum registro no BD foi realizada."); }
+
+         } Opcoes::QtdDeRegistros => {
+            if let Ok(fila) = carrega_historicos() {
+               println!(
+                  "Foram realizados {} registros até momento.", 
+                  fila.len()
+               );
+            }
+         } Opcoes::Ajuda => 
+            { manual_de_ajuda(); } 
+         Opcoes::Invalido => 
+            { println!("Opção passada, não existe."); }
+      }
+   }
+}  
 
 #[cfg(test)]
 #[allow(non_snake_case)]
