@@ -11,9 +11,10 @@ mod banco;
 mod menu;
 
 use std::collections::HashMap;
-use std::io::{Result as ResultadoIO};
+use std::io::{ErrorKind, Result as ResultadoIO};
 use std::path::{Path, PathBuf};
 use std::fs::read_dir;
+use std::process::{exit};
 // Ferramental dos módulos criados:
 use historico::{Historico};
 use banco::{registra_um_historico, carrega_historicos};
@@ -79,7 +80,18 @@ fn organizando_fontes_e_suas_versoes() -> Option<Pacote> {
     * disponíveis no sistema. Os resultado pode ser válido ou não, 
     * dependendo se há algo no sistema.
     */
-   let mut tudo = todos_diretorios_fontes().unwrap();
+   let mut tudo = match todos_diretorios_fontes() {
+      Ok(lista) => lista,
+      Err(erro) => { 
+         match erro.kind() {
+            ErrorKind::NotFound => 
+            // Um problema de não haver tal diretório é aceitável.
+               { return None; }
+            _=>
+               { panic!("[ERRO] {:?}", erro); }
+         }
+      }
+   };
 
    /* se estiver vázio, ou seja, não há nenhuma biblioteca de terceiros no 
    computador, apenas retorna sem dados(none). */
@@ -183,6 +195,9 @@ fn mostra_listagem_dos_pacotes_baixados() {
     */
    let todo_repositorio = organizando_fontes_e_suas_versoes();
 
+   if todo_repositorio.is_none()
+      { println!("Não há repositórios neste sistema."); exit(0); }
+
    println!(
       "\nDepedências baixadas no computador({} \
       pacotes distintos, {} no total):",
@@ -195,9 +210,7 @@ fn mostra_listagem_dos_pacotes_baixados() {
 
    listagem_das_fontes(todo_repositorio.unwrap());
    desenha_barra_delimitadora_da_listagem();
-
 }
-
 
 fn main() {
    /* O menu de todas opções personalizaveis que este programa pode promover
