@@ -10,6 +10,7 @@
 #include "filtro.h"
 #include "variaveis_de_ambiente.h"
 #include "linque.h"
+#include "funcionalidades.h"
 // Biblioteca do Linux(Glibc):
 #include <unistd.h>
 
@@ -57,7 +58,7 @@ static void visualiza_opcao(struct Opcao * obj) {
       strcmp(obj->descricao, VAZIA) == IgualStr ||
       strcmp(obj->longa, VAZIA) == IgualStr
    };
-   char argumento[UCHAR_MAX];
+   char argumento[UCHAR_MAX] = {'0'};
 
    if (algumas_da_opcoes_invalida) {
       perror("'longa' e 'descrição' tem que ter algo válido.");
@@ -155,37 +156,24 @@ extern void menu_interface_do_programa(char* args[], int total)
    const char* const CURTAS = "hi::P::L::M::t::e::";
    int result = getopt(total, args, CURTAS);
    const int Falhou = -1;
-
-   #ifdef __debug__
-   const char* programas[] = {
-      "/home/alice/Documents/códigos/c-language/codigo-info/bin/programs/cmd-frequencia-debug",
-      "/home/alice/Documents/códigos/c-language/codigo-info/bin/programs/pacotes-externos-debug",
-   };
-   #else
-   const char* programas[] = {
-      "/home/alice/Documents/códigos/c-language/codigo-info/bin/programs/cmd-frequencia",
-      "/home/alice/Documents/códigos/c-language/codigo-info/bin/programs/pacotes-externos",
-   };
-   #endif
-   int exitcode;
+   char opcao, *caminho, *OPCAO;
 
    #ifdef __debug__
    visualiza_argumentos(args, total);
    #endif
 
    while (result != Falhou) {
-      char opcao = (char)result;
+      opcao = (char)result;
 
       if (opcao == '?')
          puts("Opção não existe!");
       else if (opcao == 'h')
-         // folha_de_ajuda();
          folha_de_ajuda();
       else if (opcao == 'P')
          mostra_conteudo_da_variavel_path();
 
       else if (opcao == 'i') {
-         char* caminho = args[optind];
+         caminho = args[optind];
 
          DirInfo agregado = processa_projeto(caminho);
          visualiza_diretorio_info(&agregado);
@@ -193,31 +181,10 @@ extern void menu_interface_do_programa(char* args[], int total)
       } else if (opcao == 'L') 
          info_sobre_repositorio_de_linques();
       else if (opcao == 't' || opcao == 'M') {
-         exitcode = execl(
-            programas[0], "cmd-frquencia", 
-            args[1], (char*)NULL
-         );
-
-         if (exitcode == -1) {
-            puts("O programa falhou na execução.");
-            perror(strerror(errno));
-
-         } else
-            puts("O programa executou normalmente.");
-      } else if (opcao == 'e') {
-         exitcode = execl(
-            programas[1], "pacotes-externos", 
-            NULL, (char*)NULL
-         );
-
-         if (exitcode == -1) {
-            puts("O programa falhou na execução.");
-            perror(strerror(errno));
-
-         } else
-            puts("O programa executou normalmente.");
-      }
-
+         OPCAO = args[1];
+         cmd_frequencia(OPCAO);
+      } else if (opcao == 'e') 
+         { pacotes_externos(); }
 
       #ifdef __debug__
       variaveis_externas();
@@ -228,8 +195,6 @@ extern void menu_interface_do_programa(char* args[], int total)
 }
 
 #ifdef __unit_tests__
-#include <stdlib.h>
-
 int main(int total, char* argumentos[]) 
 {
    struct Opcao options[] = {
@@ -253,5 +218,4 @@ int main(int total, char* argumentos[])
    );
    return EXIT_SUCCESS;
 }
-
 #endif
