@@ -1,3 +1,4 @@
+#!/bin/python3 -OO
 """
    Cria um linque no repositório "oficial" de linque que o usuário define,
  que é $LINKS. Lá são colocados todos linques de aplicações CLI, que foram
@@ -45,4 +46,3 @@ def cria_linques() -> None:
 
 verificacao_basica()
 cria_linques()
-      
