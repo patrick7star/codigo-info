@@ -3,7 +3,7 @@ all: debug otimizado
 
 #=== === === === === === === === === === === === === === === ==== == === ==
 VERSOES_DIR = $(CCODES)/versions
-VERSAO = v0.2.0
+VERSAO = v0.3.0
 CONTEUDO = lib/ src/ makefile
 NOME = codigo-info
 CAMINHO = $(VERSOES_DIR)/$(NOME).$(VERSAO)
