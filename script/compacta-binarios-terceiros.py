@@ -18,7 +18,10 @@ if ARQUIVO.exists():
 with tarfile.TarFile(ARQUIVO, mode="w") as arquivo:
    for caminho in BINARIOS_ESTATICOS:
       arquivo.add(caminho)
+   # Adiciona diretório como módulos.
    arquivo.add("./lib/include")
+   # Adicionando biblioteca estática do Rust.
+   arquivo.add("./lib/libutilitarios.rlib")
 
    print("\nTudo que foi colocado no arquivo:")
    arquivo.list()
