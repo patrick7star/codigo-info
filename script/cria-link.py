@@ -10,14 +10,16 @@ from pathlib import (Path)
 
 IDENTIFICADOR = "LINKS"
 if __debug__:
+   print("\nRodando no modo DEBUG", end='\n\n')
    NOME = "codigo-info-debug"
-   EXECUTAVEL = Path("bin/codigo-info-debug").resolve()
+   EXECUTAVEL = Path("./bin/codigo-info-debug").resolve()
 else:
    NOME = "codigo-info"
-   EXECUTAVEL = Path("bin/codigo-info").resolve()
+   EXECUTAVEL = Path("./bin/codigo-info").resolve()
 
 
 def cria_caminho_do_linque() -> Path:
+   "Retorna caminho onde o linque será criado, como o NOME."
    caminho = Path(getenv(IDENTIFICADOR))
    caminho = caminho.joinpath(NOME)
 
@@ -38,10 +40,17 @@ def verificacao_basica() -> None:
 def cria_linques() -> None:
    caminho = cria_caminho_do_linque()
 
-   assert (not caminho.exists(follow_symlinks=False))
-   caminho.symlink_to(Path(EXECUTAVEL).resolve())
-   assert (caminho.exists(follow_symlinks=False))
-   print("Linque criado com sucesso.")
+   #assert (not caminho.exists(follow_symlinks=False))
+
+   try:
+      caminho.symlink_to(EXECUTAVEL)
+   except FileExistsError:
+      caminho.unlink()
+      print("Removido linque já lá.")
+      caminho.symlink_to(EXECUTAVEL)
+   finally:
+      assert (caminho.exists(follow_symlinks=False))
+      print("Linque criado com sucesso.")
 
 
 verificacao_basica()
