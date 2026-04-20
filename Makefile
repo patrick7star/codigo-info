@@ -35,6 +35,8 @@ backups:
 # Apenas funciona na máquina do desenvolvedor do projeto. Você obviamente
 # não precisa fazer isso, pois os binários necessários já vem junto.
 importa-biblioteca-externas:
+	@mkdir -p lib/include
+	@echo "Criado diretórios 'lib' e subdiretórios 'include'."
 	@cp -uv	$(LIB_UTILS_ST_BINS)/libteste.a				\
 				$(LIB_UTILS_ST_BINS)/libterminal.a			\
 				$(LIB_UTILS_ST_BINS)/libvisualiza.a			\
