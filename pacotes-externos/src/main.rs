@@ -246,7 +246,7 @@ fn main() {
             { println!("Opção passada, não existe."); }
       }
    }
-}  
+}
 
 #[cfg(test)]
 #[allow(non_snake_case)]
@@ -343,5 +343,12 @@ mod tests {
             assert!(false);
          }
       }
+   }
+
+   #[test]
+   fn variavel_ambiente_home_no_wsl() {
+      println!("Home: {}", env!("HOME"));
+      // Variável obtém que valor:
+      println!("{RAIZ}");
    }
 }
