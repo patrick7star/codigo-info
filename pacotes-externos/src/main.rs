@@ -1,8 +1,8 @@
-/** 
+/**
    Este programa tem como objetivo substituir a listagem de libs externas do
- Rust, estas que foram baixados por outras bibliotecas na hora de 
+ Rust, estas que foram baixados por outras bibliotecas na hora de
  compilação, ou adicionadas por mim mesma de modo manual. Claro que será uma
- coisa bem mais organizada do que o simples comando faz hoje, usando de 
+ coisa bem mais organizada do que o simples comando faz hoje, usando de
  sintaxe colorida e organizando versões numa simples linha.
 */
 
@@ -27,16 +27,57 @@ type Pares = Vec<Par>;
 
 #[cfg(target_os="linux")]
 const RAIZ: &'static str = concat!(
-   env!("HOME"), 
+   env!("HOME"),
    "/.cargo/registry/src"
 );
 
 #[cfg(target_os="windows")]
 const RAIZ: &'static str = concat!(
-   env!("HOMEPATH"), 
+   env!("HOMEPATH"),
    "/.cargo/registry/src"
 );
 
+/* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
+ *                         Interface Pública
+ * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */
+fn main() {
+   /* O menu de todas opções personalizaveis que este programa pode promover
+    * até o momento. Futuramente, obviamente haverá bem mais. Por enquanto
+    * é apenas isso. Veja também, que a listagem, que é a funcionalidade
+    * principal do programa. Se transformou numa opção obrigatoria prá
+    * executar. É claro que, pode ser que, seja ativada quando não houver
+    * opção, ou talvez a 'ajuda' seja a padrão. Ainda não tem certezea de
+    * qual usar. */
+   for opcao in opcoes_selecionadas() {
+      match opcao {
+         Opcoes::Listagem | Opcoes::Nenhuma =>
+            { mostra_listagem_dos_pacotes_baixados(); }
+
+         Opcoes::RealizaResgistro => {
+            let snap = Historico::gera();
+
+            if let Ok(size) = registra_um_historico(snap)
+               { println!("Foi gravado um registro de {} bytes.", size); }
+             else
+              { println!("Nenhum registro no BD foi realizada."); }
+
+         } Opcoes::QtdDeRegistros => {
+            if let Ok(fila) = carrega_historicos() {
+               println!(
+                  "Foram realizados {} registros até momento.",
+                  fila.len()
+               );
+            }
+         } Opcoes::Ajuda =>
+            { manual_de_ajuda(); }
+         Opcoes::Invalido =>
+            { println!("Opção passada, não existe."); }
+      }
+   }
+}
+/* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
+ *                         Interface Privada
+ * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */
 fn todos_diretorios_fontes() -> ResultadoIO<Vec<PathBuf>> {
    // bolsa para coletar caminhos de códigos-fontes.
    let mut coletador = Vec::<PathBuf>::new();
@@ -54,15 +95,15 @@ fn todos_diretorios_fontes() -> ResultadoIO<Vec<PathBuf>> {
             if fonte.as_path().is_dir()
                { coletador.push(fonte); }
          }
-      } 
+      }
    }
 
-   /* enviando de volta lista com possíveis códigos-fontes 
+   /* enviando de volta lista com possíveis códigos-fontes
     * coletados nele.*/
    Ok(coletador)
 }
 
-fn identificando_fonte<'a>(codigo_fonte: &'a Path) 
+fn identificando_fonte<'a>(codigo_fonte: &'a Path)
   -> (&'a str, &'a str)
 {
    /* separa o nome da versão do código-fonte passado.*/
@@ -77,14 +118,14 @@ fn organizando_fontes_e_suas_versoes() -> Option<Pacote> {
    /* agloremando códigos-fontes iguais, porém com versões diferentes
     * deles. O retorno será um dicionário, onde a chave será o nome
     * da fonte, já os valores serão uma array contendo todas versões
-    * disponíveis no sistema. Os resultado pode ser válido ou não, 
+    * disponíveis no sistema. Os resultado pode ser válido ou não,
     * dependendo se há algo no sistema.
     */
    let mut tudo = match todos_diretorios_fontes() {
       Ok(lista) => lista,
-      Err(erro) => { 
+      Err(erro) => {
          match erro.kind() {
-            ErrorKind::NotFound => 
+            ErrorKind::NotFound =>
             // Um problema de não haver tal diretório é aceitável.
                { return None; }
             _=>
@@ -93,7 +134,7 @@ fn organizando_fontes_e_suas_versoes() -> Option<Pacote> {
       }
    };
 
-   /* se estiver vázio, ou seja, não há nenhuma biblioteca de terceiros no 
+   /* se estiver vázio, ou seja, não há nenhuma biblioteca de terceiros no
    computador, apenas retorna sem dados(none). */
    if tudo.is_empty() { return None; }
 
@@ -108,16 +149,16 @@ fn organizando_fontes_e_suas_versoes() -> Option<Pacote> {
 
       if compilado.contains_key(nome) {
          let entrada = compilado.get_mut(nome).unwrap();
-         /* evitando a mesma versão de ser adicionada novamente, por algum 
-          * motivo tal redundância está acontencendo. Algum erro bobo com 
-          * a listagem acima, porém está sendo resolvido aqui na inserção 
+         /* evitando a mesma versão de ser adicionada novamente, por algum
+          * motivo tal redundância está acontencendo. Algum erro bobo com
+          * a listagem acima, porém está sendo resolvido aqui na inserção
           * do mapa. */
          if !entrada[..].contains(&versao_str)
             { entrada.push(versao.to_string()); }
-         
+
       } else {
          compilado.insert(
-            nome.to_string(), 
+            nome.to_string(),
             vec![versao.to_string()]
          );
       }
@@ -132,7 +173,7 @@ fn listagem_das_fontes(repositorio: Pacote) {
    /* cuidando especialmente da função de visualização de todos estes
     * dados, formando a saída para o modo mais legível possível.
     */
-   if repositorio.is_empty() 
+   if repositorio.is_empty()
       { println!("\nnão há nada aqui!\n"); return (); }
 
    // baseando a formatação no comprimento da maior string.
@@ -164,7 +205,7 @@ fn listagem_das_fontes(repositorio: Pacote) {
 
 fn ordena_repositorio(mut repositorio: Pacote) -> Pares {
    /* Ordena uma lista de strings de a até z, baseado na chave do mapa. */
-   let mut array = repositorio.drain().collect::<Pares>(); 
+   let mut array = repositorio.drain().collect::<Pares>();
 
    // algoritmo de ordenação bubblesort.
    for i in 0..array.len() {
@@ -185,7 +226,7 @@ fn ordena_repositorio(mut repositorio: Pacote) -> Pares {
    array
 }
 
-fn desenha_barra_delimitadora_da_listagem() 
+fn desenha_barra_delimitadora_da_listagem()
    { println!("\n{}\n", &"-".repeat(60)); }
 
 fn mostra_listagem_dos_pacotes_baixados() {
@@ -212,42 +253,6 @@ fn mostra_listagem_dos_pacotes_baixados() {
    desenha_barra_delimitadora_da_listagem();
 }
 
-fn main() {
-   /* O menu de todas opções personalizaveis que este programa pode promover
-    * até o momento. Futuramente, obviamente haverá bem mais. Por enquanto
-    * é apenas isso. Veja também, que a listagem, que é a funcionalidade 
-    * principal do programa. Se transformou numa opção obrigatoria prá 
-    * executar. É claro que, pode ser que, seja ativada quando não houver 
-    * opção, ou talvez a 'ajuda' seja a padrão. Ainda não tem certezea de 
-    * qual usar. */
-   for opcao in opcoes_selecionadas() {
-      match opcao {
-         Opcoes::Listagem | Opcoes::Nenhuma => 
-            { mostra_listagem_dos_pacotes_baixados(); }
-
-         Opcoes::RealizaResgistro => {
-            let snap = Historico::gera();
-
-            if let Ok(size) = registra_um_historico(snap)
-               { println!("Foi gravado um registro de {} bytes.", size); }
-             else
-              { println!("Nenhum registro no BD foi realizada."); }
-
-         } Opcoes::QtdDeRegistros => {
-            if let Ok(fila) = carrega_historicos() {
-               println!(
-                  "Foram realizados {} registros até momento.", 
-                  fila.len()
-               );
-            }
-         } Opcoes::Ajuda => 
-            { manual_de_ajuda(); } 
-         Opcoes::Invalido => 
-            { println!("Opção passada, não existe."); }
-      }
-   }
-}
-
 #[cfg(test)]
 #[allow(non_snake_case)]
 mod tests {
@@ -257,7 +262,7 @@ mod tests {
 
    #[test]
    fn verificando_se_filtra_fontes_apenas() {
-      let possiveis_sources = todos_diretorios_fontes(); 
+      let possiveis_sources = todos_diretorios_fontes();
 
       for path in possiveis_sources.unwrap() {
          let caminho = path.join("./Cargo.toml");
@@ -274,7 +279,7 @@ mod tests {
 
    #[test]
    fn separacao_perfeita_das_fontes() {
-      let possiveis_sources = todos_diretorios_fontes(); 
+      let possiveis_sources = todos_diretorios_fontes();
 
       for path in possiveis_sources.unwrap() {
          let (nome, versao) = identificando_fonte(path.as_path());
@@ -294,7 +299,7 @@ mod tests {
 
    #[test]
    fn informacao_compilada_nomes_e_versoes() {
-      for entrada in organizando_fontes_e_suas_versoes().unwrap() 
+      for entrada in organizando_fontes_e_suas_versoes().unwrap()
          { println!("{:?}", entrada);  }
 
       // avaliação manual.
@@ -326,7 +331,7 @@ mod tests {
          "Informações sobre a máquina:\n\tArquitetura: {}\n\t \
          Sistema do Tipo:{:?}\n\tCodename do OS: {}\n\tEdição: '{}'\n\t \
          Tipo de OS: {:?}\n\tVersionamento: {:?}",
-         X.architecture().unwrap_or(Y), X.bitness(), 
+         X.architecture().unwrap_or(Y), X.bitness(),
          X.codename().unwrap_or(Y), X.edition().unwrap_or(Y),
          X.os_type(), X.version()
       );
@@ -338,8 +343,8 @@ mod tests {
       match var("LINKS") {
          Ok(data) =>
             { println!("LINKS: {data:}"); }
-         Err(erro) => { 
-            println!("Está é a mensagem de erro: '{erro:?}'"); 
+         Err(erro) => {
+            println!("Está é a mensagem de erro: '{erro:?}'");
             assert!(false);
          }
       }
