@@ -22,11 +22,11 @@ typedef Caminho const ConstPath;
  * Declarada aqui, pois é preciso que as funções públicas "sabiam" que as
  * funções que são chamadas existem.
  * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */
-static void junta_caminhos(Caminho a, ConstPath b)
-static Caminho caminho_base_do_programa(void)
-static Caminho caminho_cmd_frequencia(void)
-static Caminho caminho_pacotes_externos(void)
-static void free_caminho(Caminho In)
+static void junta_caminhos(Caminho a, ConstPath b);
+static Caminho caminho_base_do_programa(void);
+static Caminho caminho_cmd_frequencia(void);
+static Caminho caminho_pacotes_externos(void);
+static void free_caminho(Caminho In);
 
 /* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
  *                         Interface Pública
@@ -38,6 +38,11 @@ void pacotes_externos(void)
       caminho, "pacotes-externos",
       NULL, (char*)NULL
    );
+
+   #ifdef __debug__
+   // Visualizando caminho usado.
+   printf("Caminho: '%s'\n", caminho);
+   #endif
 
    if (exitcode == -1) {
       puts("O programa falhou na execução.");
@@ -64,9 +69,8 @@ void cmd_frequencia(const char* OPCAO)
    } else
       puts("O programa executou normalmente.");
 }
-
 /* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
- *                         Interface Privada Implementação
+ *                   Interface Privada Implementação
  * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */
 static void junta_caminhos(Caminho a, ConstPath b)
 {
@@ -131,12 +135,20 @@ static Caminho caminho_pacotes_externos(void)
  * neste caso é o 'programa-externos'. */
    const Caminho RESTANTE = {
       #ifdef __debug__
-      "/codigo-info/bin/programs/pacotes-externos-debug"
+      // "/codigo-info/bin/programs/pacotes-externos-debug"
+      // (Por algum motivo não funciona, ao menos no Linux[WSL])
+      "/bin/programs/pacotes-externos-debug"
       #else
+      // (Por algum motivo não funciona, ao menos no Linux[WSL])
       "/codigo-info/bin/programs/pacotes-externos"
       #endif
    };
    Caminho output = caminho_base_do_programa();
+
+   #ifdef __debug__
+      printf("Restante: '%s'\n", RESTANTE);
+      printf("Base: '%s'\n", output);
+   #endif
 
    // Juntando os caminhos ...
    strcat(output, RESTANTE);
