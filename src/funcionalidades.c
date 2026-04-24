@@ -1,7 +1,7 @@
-/*   Provem chamadas de funcionalidades externas, ou seja, programas que 
+/*   Provem chamadas de funcionalidades externas, ou seja, programas que
  * foram apenas copiados para o código para extender as fucionalidades
  * destes. Deixar as chamadas e esquemas de execução deles neste arquivo
- * faz algo mais organizado. 
+ * faz algo mais organizado.
  */
 
 // Biblioteca padrão do C:
@@ -16,14 +16,65 @@
 typedef char* Caminho;
 typedef Caminho const ConstPath;
 
+/* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
+ *                         Interface Privada
+ *
+ * Declarada aqui, pois é preciso que as funções públicas "sabiam" que as
+ * funções que são chamadas existem.
+ * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */
+static void junta_caminhos(Caminho a, ConstPath b)
+static Caminho caminho_base_do_programa(void)
+static Caminho caminho_cmd_frequencia(void)
+static Caminho caminho_pacotes_externos(void)
+static void free_caminho(Caminho In)
 
+/* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
+ *                         Interface Pública
+ * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */
+void pacotes_externos(void)
+{
+   Caminho caminho = caminho_pacotes_externos();
+   int exitcode = execl(
+      caminho, "pacotes-externos",
+      NULL, (char*)NULL
+   );
+
+   if (exitcode == -1) {
+      puts("O programa falhou na execução.");
+      perror(strerror(errno));
+      puts(caminho);
+
+   } else
+      puts("O programa executou normalmente.");
+   free_caminho(caminho);
+}
+
+void cmd_frequencia(const char* OPCAO)
+{
+   Caminho caminho = caminho_cmd_frequencia();
+   int exitcode = execl(
+      caminho, "cmd-frquencia",
+      OPCAO, (char*)NULL
+   );
+
+   if (exitcode == -1) {
+      puts("O programa falhou na execução.");
+      perror(strerror(errno));
+
+   } else
+      puts("O programa executou normalmente.");
+}
+
+/* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
+ *                         Interface Privada Implementação
+ * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */
 static void junta_caminhos(Caminho a, ConstPath b)
 {
 // Adiciona o caminho 'b' no caminho 'a'. Este último é modificado.
    ConstPath SEP = "/";
 
    strcat(a, SEP);
-   strcat(a, b); 
+   strcat(a, b);
 }
 
 static Caminho caminho_base_do_programa(void)
@@ -51,14 +102,14 @@ static Caminho caminho_base_do_programa(void)
       strcpy(output, caminho);
       junta_caminhos(output, COMPLEMENTO);
    }
-   
+
    return output;
 }
 
 static Caminho caminho_cmd_frequencia(void)
 {
-/* Retorna o caminho do executável dentro do diretório do projeto. Não é 
- * verificado a validade de tal caminho, se ele existe ou não, será 
+/* Retorna o caminho do executável dentro do diretório do projeto. Não é
+ * verificado a validade de tal caminho, se ele existe ou não, será
  * retornado um. */
    const Caminho RESTANTE = {
       #ifdef __debug__
@@ -95,40 +146,9 @@ static Caminho caminho_pacotes_externos(void)
 static void free_caminho(Caminho In)
    { free(In); }
 
-void pacotes_externos(void) 
-{
-   Caminho caminho = caminho_pacotes_externos();
-   int exitcode = execl(
-      caminho, "pacotes-externos", 
-      NULL, (char*)NULL
-   );
-
-   if (exitcode == -1) {
-      puts("O programa falhou na execução.");
-      perror(strerror(errno));
-      puts(caminho);
-
-   } else
-      puts("O programa executou normalmente.");
-   free_caminho(caminho);
-}
-
-void cmd_frequencia(const char* OPCAO)
-{
-   Caminho caminho = caminho_cmd_frequencia();
-   int exitcode = execl(
-      caminho, "cmd-frquencia", 
-      OPCAO, (char*)NULL
-   );
-
-   if (exitcode == -1) {
-      puts("O programa falhou na execução.");
-      perror(strerror(errno));
-
-   } else
-      puts("O programa executou normalmente.");
-}
-
+/* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
+ *                       Testes Unitários
+ * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */
 #ifdef __unit_tests__
 #include "teste.h"
 
@@ -153,7 +173,7 @@ void execucao_do_cmd_frequencia_tendencia(void)
 void execucao_do_cmd_frequencia_tudo(void)
    { cmd_frequencia("-t"); }
 
-int main(int total, char* argumentos[]) 
+int main(int total, char* argumentos[])
 {
    executa_testes_b(
       true, 4,
