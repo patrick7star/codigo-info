@@ -9,9 +9,9 @@ NOME = codigo-info
 CAMINHO = $(VERSOES_DIR)/$(NOME).$(VERSAO)
 
 # Tal biblioteca apenas funciona na máquina do desenvolvedor do projeto.
-LIB_UTILS_HEADERS = $(CCODES)/utilitarios-em-c/include
-LIB_UTILS_BINS		= $(CCODES)/utilitarios-em-c/bin/shared
-LIB_UTILS_ST_BINS = $(CCODES)/utilitarios-em-c/bin/static
+LIB_UTILS_HEADERS  = $(CCODES)/utilitarios-em-c/include
+LIB_UTILS_DYN_BINS = $(CCODES)/utilitarios-em-c/bin/shared
+LIB_UTILS_ST_BINS  = $(CCODES)/utilitarios-em-c/bin/static
 # Bibliotecas que já vem no pacote baixado.
 LOCAL_UTILS_HEADERS	= ./lib/include
 LOCAL_UTILS_BINS		= ./lib/
@@ -85,10 +85,11 @@ LIB_RLS		= ./lib
 #						Testes Unitários de Cada Módulo
 #=== === === === === === === === === === === === === === === ==== == === ==
 variaveis_de_ambiente:
-	gcc -g3 -O0 -I$(LIB_UTILS_HEADERS) -Wall -pedantic -D__unit_tests__ \
-		-o ./bin/ut_$@ ./src/$@.c \
-		-L$(LIB_UTILS_BINS) -lteste -lestringue -limpressao -llaref \
-      -lterminal -llegivel -ltempo -lm
+	gcc -g3 -O0 -I$(LOCAL_UTILS_HEADERS) -Wall \
+		-D__unit_tests__ -D__debug__ \
+		-o ./bin//tests/ut-$@ ./src/$@.c \
+		-L$(LOCAL_UTILS_BINS) -lteste -lcomputa -lvisualiza -lcolecoes \
+			 -lm
 
 linque:
 	gcc -g3 -O0 -I$(LIB_UTILS_HEADERS) -Wall -pedantic -D__unit_tests__ \
