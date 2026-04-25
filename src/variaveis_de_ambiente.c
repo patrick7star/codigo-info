@@ -18,7 +18,15 @@
 
 extern char** environ;
 
+/* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
+ *                         Interface Privada                      
+ * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */ 
+void realiza_impressao_colorida_da_entrada(char*, wchar_t);
+void impressao_formatada_sem_coloracao(char* caminho, wchar_t indicador);
 
+/* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
+ *                         Interface Pública                      
+ * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */ 
 extern ListaStrings filtra_caminhos_de_path(void) 
 {
    char* conteudo = getenv("PATH"); 
@@ -34,86 +42,46 @@ extern void mostra_conteudo_da_variavel_path(void)
 {
    ListaStrings out = filtra_caminhos_de_path();
    wchar_t INDICADOR = L'\u2794';
-   const char* AZUL = "\033[1;94m", *FIM = "\033[0m", *TAB = "\t\b\b";
-   const char* AMARELO = "\033[1;93m";
+   const size_t QUANTIA = out.total;
+   char** lista = out.lista;
 
    printf("\nTodos caminhos que pertecem ao PATH:\n\n");
 
-   for (int i = 1; (size_t)i <= (out).total; i++) {
-      printf(
-         "%s%s%-5lc%s %s%s%s\n", TAB, AMARELO, INDICADOR, 
-         FIM, AZUL, out.lista[i - 1], FIM
-      );
-   }
+   for (size_t i = 1; i <= QUANTIA; i++)
+      realiza_impressao_colorida_da_entrada(lista[i - 1], INDICADOR);
    puts("\n");
 }
 
-static char* generico_to_string(Generico e)
-   { return (char*)e; }
+/* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
+ *                      Funções Auxiliares
+ * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */ 
+void realiza_impressao_colorida_da_entrada(char* caminho, wchar_t indicador)
+{
+/* Pega o caminho que é prá imprimir, e o símbolo Unicode do indicador, 
+ * arranja de forma bonita e agradável, então imprime com cores. Usando é 
+ * claro da tabela de cores ANSI. 
+ */
+   // ANSI escape code colors.
+   const char* AZUL    = "\033[1;94m", 
+             * FIM     = "\033[0m", 
+             * TAB     = "\t\b\b",
+             * AMARELO = "\033[1;93m";
 
-static bool free_string(Generico e)
- { free(generico_to_string(e)); return true; }
-
-void listagem_de_todas_variaveis_de_usuario(void) {
-   char** cursor = environ;
-   int total = 0;
-   Vetor lista = cria_al();
-   const int sz = sizeof(char);
-   const int IGUAIS = 0;
-
-   while (*cursor != NULL) 
-   {
-      if (*cursor != NULL) 
-      {
-         char* igualdade = strchr(*cursor, '=');
-         ptrdiff_t quantia = igualdade - *cursor;
-         char* nome = malloc(UCHAR_MAX * sz);
-         
-         strncpy(nome, *cursor, quantia);
-         nome[quantia] = '\0';
-
-         if (strcmp(nome, "_") == IGUAIS) 
-            free(nome);
-         else
-            insere_al(lista, nome);
-      }
-      cursor++;
-      total++;
-   }
-
-   printf("\nHá %d variáveis de ambiente configuradas.\n", total);
-   // NOTA: É preciso desalocar a memória alocada. Terei que desabilitar tal 
-   // instrução aqui, pois ainda não consegui deixar estável na biblioteca
-   // que importei pra este projeto.
-   destroi_interno_al(lista, free_string);
+   // Estruturação das partes, aplicação das cores, tabulação, então aplica
+   // a impressão.
+   printf(
+      "%s%s%-5lc%s %s%s%s\n", TAB, AMARELO, indicador, 
+      FIM, AZUL, caminho, FIM
+   );
 }
 
-void variaveis_definidas_pelo_usuario(void) {
-   char caminho[UCHAR_MAX];
-   const char* BASE = getenv("HOME");
+void impressao_formatada_sem_coloracao(char* caminho, wchar_t indicador)
+{
+/* Realiza uma impressão como a de cima, porém em preto e branco, sem qualquer
+ * cor. */
+   const char* TAB= "\t\b\b";
 
-   sprintf(caminho, "%s/%s", BASE, ".profile");
-   puts(caminho);
-
-   FILE* arquivo = fopen(caminho, "rt");
-   ssize_t lido; const int sz = sizeof(int);
-   size_t TOTAL = UCHAR_MAX, contado = 0;
-   char* buffer = calloc(TOTAL, sz);
-   const char* const PATTERN = "export";
-
-   do {
-      lido = getline(&buffer, &TOTAL, arquivo);
-
-      // Busca por variáveis criadas(começam com 'export').
-      if (strstr(buffer, PATTERN) != NULL)
-         printf("[%03ld] %s\n", contado, buffer);
-
-      // Conta o total de linhas iteradas.
-      contado++;
-   } while(lido != -1);
-
-   puts("Chegou-se ao fim do arquivo.");
-   fclose(arquivo);
+   printf("%s%-5lc %s\n", TAB, indicador, caminho);
 }
 
 #if defined(__unit_tests__) && defined(__linux__)
@@ -126,37 +94,30 @@ void variaveis_definidas_pelo_usuario(void) {
 #include <stddef.h>
 #include <time.h>
 
-static void debug_lista_strings(ListaStrings* list) {
-   printf("Lista de Strings: \n");
 
-   for (int i = 1; i <= (*list).total; i++)
-      printf("\t\b\b\u2794 %s\n", (*list).lista[i - 1]);
-   puts("\n");
-}
-
-static void verificacao_da_filtragem_de_caminhos_do_path(void)
+TESTE verificacao_da_filtragem_de_caminhos_do_path(void)
 {
    ListaStrings out = filtra_caminhos_de_path();
    debug_lista_strings(&out);
 }
 
-static void funcao_que_enlata_toda_visualizacao(void)
+TESTE funcao_que_enlata_toda_visualizacao(void)
    { mostra_conteudo_da_variavel_path(); }
 
-static void sobre_variaveis_de_ambiente(void)
+TESTE visualiza_mas_em_preto_e_branco(void) 
 {
-  listagem_de_todas_variaveis_de_usuario(); 
-  variaveis_definidas_pelo_usuario();
+   ListaStrings out = filtra_caminhos_de_path();
+   wchar_t INDICADOR = L'\u2794';
+   const size_t QUANTIA = out.total;
+   char** lista = out.lista;
+
+   printf("\nTodos caminhos que pertecem ao PATH:\n\n");
+
+   for (size_t i = 1; i <= QUANTIA; i++)
+      impressao_formatada_sem_coloracao(lista[i - 1], INDICADOR);
+   puts("\n");
 }
-
-static void coloracoes_definidas_via_ls_colors(void) {
-   const char* CONTEUDO_VAR = getenv("LS_COLORS"), PADRAO = ':'; 
-   long length = strlen(CONTEUDO_VAR);
-   ListaStrings output;
-
-   output = split_at(CONTEUDO_VAR, ':');
-}
-
+      
 
 int main(int total, char* args[], char* envs[]) 
 {
@@ -164,11 +125,10 @@ int main(int total, char* args[], char* envs[])
    setlocale(LC_CTYPE, lang);
 
    executa_testes_b(
-     true, 4, 
+     true, 3, 
         Unit(verificacao_da_filtragem_de_caminhos_do_path, true),
         Unit(funcao_que_enlata_toda_visualizacao, true),
-        Unit(sobre_variaveis_de_ambiente, false),
-        Unit(coloracoes_definidas_via_ls_colors, true)
+        Unit(visualiza_mas_em_preto_e_branco, true)
    );
 
    return EXIT_SUCCESS;
