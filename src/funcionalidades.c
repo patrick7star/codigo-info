@@ -135,12 +135,10 @@ static Caminho caminho_pacotes_externos(void)
  * neste caso é o 'programa-externos'. */
    const Caminho RESTANTE = {
       #ifdef __debug__
-      // "/codigo-info/bin/programs/pacotes-externos-debug"
       // (Por algum motivo não funciona, ao menos no Linux[WSL])
       "/bin/programs/pacotes-externos-debug"
       #else
-      // (Por algum motivo não funciona, ao menos no Linux[WSL])
-      "/codigo-info/bin/programs/pacotes-externos"
+      "/bin/programs/pacotes-externos"
       #endif
    };
    Caminho output = caminho_base_do_programa();
