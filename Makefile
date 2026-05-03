@@ -138,7 +138,7 @@ pacotes-externos-debug:
 	@cd pacotes-externos && \
 		$(CARGO) build --target-dir ../bin/programs/target-pe/
 	@echo "Projeto Rust compilado com sucesso."
-	@ln -T bin/programs/target-pe/debug/cargo-listagem \
+	@ln -f -T bin/programs/target-pe/debug/cargo-listagem \
 			bin/programs/pacotes-externos-debug
 	@echo "Hard linque ligando binário criado."
 		
