@@ -36,7 +36,7 @@ void pacotes_externos(void)
    Caminho caminho = caminho_pacotes_externos();
    int exitcode = execl(
       caminho, "pacotes-externos",
-      NULL, (char*)NULL
+      "--listagem", (char*)NULL
    );
 
    #ifdef __debug__
