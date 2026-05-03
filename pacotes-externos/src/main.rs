@@ -41,25 +41,23 @@ fn main() {
     * qual usar. */
    for opcao in opcoes_selecionadas() {
       match opcao {
-         Opcoes::Listagem | Opcoes::Nenhuma =>
+         Opcoes::Nenhuma => 
             { mostra_listagem_dos_pacotes_baixados(); }
 
-         Opcoes::RealizaResgistro => {
-            let snap = Historico::gera();
-
-            if let Ok(size) = registra_um_historico(snap)
-               { println!("Foi gravado um registro de {} bytes.", size); }
-             else
-              { println!("Nenhum registro no BD foi realizada."); }
-
-         } Opcoes::QtdDeRegistros => {
+         Opcoes::Listagem => {
+            mostra_listagem_dos_pacotes_baixados();
+            realiza_um_novo_registro_de_historico_ao_sair();
+         }
+         Opcoes::QtdDeRegistros => {
             if let Ok(fila) = carrega_historicos() {
                println!(
                   "Foram realizados {} registros até momento.",
                   fila.len()
                );
-            }
-         } Opcoes::Ajuda =>
+            } else
+               { println!("Não foi possível obter um histórico."); }
+         } 
+         Opcoes::Ajuda =>
             { manual_de_ajuda(); }
          Opcoes::Invalido =>
             { println!("Opção passada, não existe."); }
@@ -69,6 +67,19 @@ fn main() {
 /* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
  *                         Interface Privada
  * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */
+/** Realiza um novo registro de histórico ao sair do programa toda vez. Por
+ * enquanto, não discrimina se não há tanta variação de um 'snap' para outro,
+ * apenas vai gravando algo novo. */
+fn realiza_um_novo_registro_de_historico_ao_sair()
+{
+   let snap = Historico::gera();
+
+   if let Ok(size) = registra_um_historico(snap)
+      { println!("Foi gravado um registro de {} bytes.", size); }
+    else
+     { println!("Nenhum registro no BD foi realizada."); }
+}
+
 fn mostra_listagem_dos_pacotes_baixados() {
    /* preciso apenas chamar a função 'organizando_fontes_e_suas_versoes',
     * para obter o mapa com os dados, e organizar-lô, de maneira bem

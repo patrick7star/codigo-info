@@ -5,14 +5,16 @@
  * abordagem.
  */
 
+// Biblioteca padrão do Rust:
 use std::path::{Path};
 use std::fs::{File};
 use std::io::{Read};
 use std::fmt::{Formatter, Result as ResultFmt, Debug, Display};
 use std::time::{SystemTime};
 use std::collections::{VecDeque};
-use crate::todos_diretorios_fontes;
 use std::time::{Duration};
+// Módulos do próprio projeto:
+use crate::todos_diretorios_fontes;
 
 pub trait Serializador {
    /// Transforma o objeto numa array de bytes. 

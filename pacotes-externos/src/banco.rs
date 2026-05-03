@@ -1,10 +1,12 @@
+// Biblioteca padrão do Rust:
 use std::fs::{OpenOptions};
 use std::io::{self, Write, Read};
 use std::collections::{VecDeque};
-use crate::historico::{Historico, Serializador};
 use std::ffi::{OsStr};
 use std::env::{current_exe};
 use std::path::{PathBuf};
+// Módulos do próprio projeto:
+use crate::historico::{Historico, Serializador};
 
 /* Nota: se este código foi copiado prá algum outro projeto, diferente do 
  * original dele, a 'cobrinha-classica', provavelmente você precisa mudar 
@@ -17,19 +19,20 @@ const BANCO:&'static str = {
     * teria que desabilitar tais testes, pois modificaria versões não já em
     * execução. */
    if cfg!(debug_assertions)
-      { "./banco-debug.dat" }
+      { "./data/banco-debug.dat" }
    else
-      { "./banco.dat" }
+      { "./data/banco.dat" }
 };
 
-type Particao           = Vec<u8>;
-type FilaDeParticoes    = VecDeque<Particao>;
-type FilaDeHistoricos   = VecDeque<Historico>;
-type FilaDeBytes        = VecDeque<u8>;
+// Apelidos usados apenas neste módulo(privados) e públicos.
+type Particao              = Vec<u8>;
+type FilaDeParticoes       = VecDeque<Particao>;
+type FilaDeBytes           = VecDeque<u8>;
+pub type FilaDeHistoricos  = VecDeque<Historico>;
 
 
 /** Grava um 'histórico' passado na memória não volátil. O retorno, em bytes,
- * de quanto foi gravado é retornado se algum erro não acontecer. */
+  * de quanto foi gravado é retornado se algum erro não acontecer. */
 pub fn registra_um_historico(obj: Historico) -> io::Result<usize> {
    let caminho = caminho_do_arquivo_bd();
    let mut banco = {
@@ -48,10 +51,11 @@ pub fn registra_um_historico(obj: Historico) -> io::Result<usize> {
    banco.write(dados.as_slice())
 }
 
+/** Carrega todos os snaps dos históricos feitos ao longo do uso do programa.
+  * O retorno, se não houve algum erro, é uma fila com os históricos
+  * ordenados na ordem que foram produzidos. */
 pub fn carrega_historicos() -> io::Result<FilaDeHistoricos> {
-   // Capacidade incial:
    const N: usize = 1e3 as usize;
-
    let mut output = FilaDeHistoricos::new();
    let caminho = caminho_do_arquivo_bd();
    let mut banco = OpenOptions::new().read(true).open(&caminho)?;
@@ -155,6 +159,9 @@ fn caminho_do_arquivo_bd() -> PathBuf
    { computa_caminho(BANCO) }
 
 
+/* == === === === === === === === === === === === === === === ==== == === ===
+ *                           Testes Unitários 
+ * == === === === === === === === === === === === === === === ==== === === */
 #[cfg(test)]
 mod tests {
    use super::*;
@@ -200,5 +207,13 @@ mod tests {
    #[test]
    fn diretorio_base() {
       println!("{}", computa_caminho("banco-debug.dat").display());
+   }
+
+   #[test]
+   fn iterando_historico_carregado() {
+      let mut lista_de_historico = carrega_historicos().unwrap();
+
+      for item in lista_de_historico.drain(..) 
+         { println!("{item}"); }
    }
 }
