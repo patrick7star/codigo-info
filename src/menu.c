@@ -82,7 +82,11 @@ extern void menu_interface_do_programa(char* args[], int total)
          visualiza_diretorio_info(&agregado);
 
       } else if (opcao == 'L') 
+         #ifdef __debug__
+         info_sobre_repositorio_de_linques_ordenada();
+         #else
          info_sobre_repositorio_de_linques();
+         #endif
       else if (opcao == 't' || opcao == 'M') {
          OPCAO = args[1];
          cmd_frequencia(OPCAO);
