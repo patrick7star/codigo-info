@@ -3,5 +3,6 @@
 #define __LINQUE_H__
 
  void info_sobre_repositorio_de_linques(void); 
+ void info_sobre_repositorio_de_linques_ordenada(void); 
 
 #endif
