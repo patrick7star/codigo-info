@@ -9,9 +9,10 @@ NOME = codigo-info
 CAMINHO = $(VERSOES_DIR)/$(NOME).$(VERSAO)
 
 # Tal biblioteca apenas funciona na máquina do desenvolvedor do projeto.
-LIB_UTILS_HEADERS  = $(CCODES)/utilitarios-em-c/include
-LIB_UTILS_DYN_BINS = $(CCODES)/utilitarios-em-c/bin/shared
-LIB_UTILS_ST_BINS  = $(CCODES)/utilitarios-em-c/bin/static
+BASE = $(UNIX_CODES)
+LIB_UTILS_HEADERS  = $(BASE)/utilitarios-em-c/include
+LIB_UTILS_DYN_BINS = $(BASE)/utilitarios-em-c/bin/shared
+LIB_UTILS_ST_BINS  = $(BASE)/utilitarios-em-c/bin/static
 # Bibliotecas que já vem no pacote baixado.
 LOCAL_UTILS_HEADERS	= ./lib/include
 LOCAL_UTILS_BINS		= ./lib/
@@ -53,7 +54,9 @@ importa-biblioteca-externas:
 				$(LIB_UTILS_HEADERS)/terminal.h						\
 				$(LIB_UTILS_HEADERS)/impressao.h						\
 				$(LIB_UTILS_HEADERS)/macros.h							\
-				$(LIB_UTILS_HEADERS)/definicoes.h \
+				$(LIB_UTILS_HEADERS)/definicoes.h					\
+				$(LIB_UTILS_HEADERS)/primitivos.h					\
+				$(LIB_UTILS_HEADERS)/conjunto_ref.h					\
 				./lib/include
 	@echo "As bibliotecas estáticas liblegivel, libhtref, libmemoria, liblaref e libestringue foram copiadas com sucesso."
 
@@ -91,9 +94,11 @@ variaveis_de_ambiente:
 		-L$(LOCAL_UTILS_BINS) -lteste -lcomputa -lvisualiza -lcolecoes \
 			 -lm
 
-linque:
-	gcc -g3 -O0 -I$(LIB_UTILS_HEADERS) -Wall -pedantic -D__unit_tests__ \
-		-o ./bin/ut_$@ ./src/$@.c \
+linque-test:
+	gcc -g3 -O0 -I$(LIB_UTILS_HEADERS) -Wall -pedantic \
+					-D__unit_tests__ -D__debug__ \
+		 -o ./bin/tests/ut-$@ ./src/linque.c \
+		 -L$(LOCAL_UTILS_BINS) -lvisualiza -lteste -lm
 
 classificacao2:
 	gcc -I/usr/include/libxml2 -o bin/tests/ut_classificacao2 src/classificacao2.c -lxml2
