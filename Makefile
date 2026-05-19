@@ -94,23 +94,24 @@ variaveis_de_ambiente:
 		-L$(LOCAL_UTILS_BINS) -lteste -lcomputa -lvisualiza -lcolecoes \
 			 -lm
 
-linque-test:
+test-linque:
 	gcc -g3 -O0 -I$(LIB_UTILS_HEADERS) -Wall -pedantic \
 					-D__unit_tests__ -D__debug__ \
-		 -o ./bin/tests/ut-$@ ./src/linque.c \
-		 -L$(LOCAL_UTILS_BINS) -lvisualiza -lteste -lm
+			-c -o ./build/linque-test.o ./src/linque.c 
+	gcc -I$(LIB_UTILS_HEADERS) -o ./bin/tests/ut-linque build/linque-test.o \
+		 -L$(LIB_UTILS_ST_BINS) -lcolecoes -lvisualiza -lteste -lm
 
 classificacao2:
 	gcc -I/usr/include/libxml2 -o bin/tests/ut_classificacao2 src/classificacao2.c -lxml2
 
-menu-test:
+test-menu:
 	gcc -I$(HEADERS_DBG) -D__unit_tests__ \
 		-o bin/tests/ut_menu build/linque.o build/variaveis_de_ambiente.o \
 			build/filtro.o build/classificacao.o src/menu.c \
 		-L$(LIB_DBG) -lhtref -llegivel -lmemoria -llaref -lestringue \
 			-limpressao -lterminal
 
-funcionalidades-test:
+test-funcionalidades:
 	gcc -c -D__unit_tests__ -D__debug__ -I$(LIB_UTILS_HEADERS) -std=c11 \
 		-o build/funcionalidades-test.obj src/funcionalidades.c
 	gcc -I$(LIB_UTILS_HEADERS) -o \
