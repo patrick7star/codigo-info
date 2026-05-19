@@ -1,7 +1,7 @@
 /* Verifica várias coisas relacionadas a linques no sistema. Eu crio um
  * repositório(um diretório), ligado há uma variável 'LINKS/ou LINQUES'. Lá,
- * coloco todos programas uteis que chamo por terminal, ou aplicações, 
- * especialmente CLI, que produzo. 
+ * coloco todos programas uteis que chamo por terminal, ou aplicações,
+ * especialmente CLI, que produzo.
  */
 
 #include "linque.h"
@@ -22,6 +22,7 @@
 #include <fcntl.h>
 // Bibliiotecas externas:
 #include "impressao.h"
+#include "conjunto_ref.h"
 
 // Caractéres Unicode de representão itens a serem listados.
 const wchar_t VALIDO   = L'\U0001f7e2';
@@ -29,30 +30,30 @@ const wchar_t INVALIDO = L'\u2b55';
 const char* PATH_ORDEMDE = "/home/dee_dee_dexter/programas/codigo-info/data/ordem-de.dat";
 
 /* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
- *                         Interface Privada                      
- * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */ 
+ *                         Interface Privada
+ * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */
 #if defined(__linux__) && defined(__unit_tests__)
-static void struct_dirent_debug(struct dirent* obj); 
-static const char* dtype_str(uint32_t code); 
+static void struct_dirent_debug(struct dirent* obj);
+static const char* dtype_str(uint32_t code);
 #endif
-static bool lincado_a_algo(char* caminho); 
+static bool lincado_a_algo(char* caminho);
 static char* junta_caminhos(char* path_a, char* path_b);
-static bool pular_entradas_desnecessarias(struct dirent* obj); 
+static bool pular_entradas_desnecessarias(struct dirent* obj);
 static void status_dos_linques_avaliados(int validos, int invalidos);
 static bool um_caminho_no_windows(const char* caminho);
 
-typedef enum { 
-   Nenhuma = 1 << 0,       Alfabetica  = 1 << 1, 
-   Criacao = 1 << 2,       Acesso      = 1 << 3, 
-   Sistema = 1 << 4,       Aleatoria   = 1 << 5 
+typedef enum {
+   Nenhuma = 1 << 0,       Alfabetica  = 1 << 1,
+   Criacao = 1 << 2,       Acesso      = 1 << 3,
+   Sistema = 1 << 4,       Aleatoria   = 1 << 5
 } OrdemDirEnt ;
 
 enum os_check { Failed = -1, Okay };
 
-typedef struct { 
+typedef struct {
    // Clone do ponteiro atual.
-   struct dirent* lista; 
-   int quantia; 
+   struct dirent* lista;
+   int quantia;
    OrdemDirEnt ordem;
 
 } ListaDirEnt;
@@ -74,8 +75,8 @@ static void salva_ode(OrdemDirEnt);
 static const char* ordemdirent_to_str(OrdemDirEnt);
 
 /* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
- *                         Interface Pública                      
- * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */ 
+ *                         Interface Pública
+ * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */
 void info_sobre_repositorio_de_linques(void) {
 /* Lista todas entradas do diretório que representa o repositório de linques,
  * se houver algum, ou a variável que direciona ela estiver bem definida.
@@ -83,11 +84,11 @@ void info_sobre_repositorio_de_linques(void) {
    const char* caminho = repositorio();
 
    if (caminho == NULL) {
-      perror("Variável não definida!"); 
+      perror("Variável não definida!");
       abort();
    }
 
-   DIR* iteracao = opendir(caminho); 
+   DIR* iteracao = opendir(caminho);
    struct dirent* atual;
    char* nome, *aux, *base = (char*)caminho;
    wchar_t status;
@@ -99,7 +100,7 @@ void info_sobre_repositorio_de_linques(void) {
    for (atual=readdir(iteracao); atual != NULL; atual=readdir(iteracao))
    {
       if (pular_entradas_desnecessarias(atual))
-         continue; 
+         continue;
 
       nome = (char*)(*atual).d_name;
       aux = junta_caminhos(base, nome);
@@ -126,8 +127,8 @@ void info_sobre_repositorio_de_linques_ordenada(void) {
 /* Lista todas entradas do diretório que representa o repositório de linques,
  * se houver algum, ou a variável que direciona ela estiver bem definida.
  * Entretanto, está leva tanto a ordenação total, como a ausência dela,
- * portanto como foi inicialmente iterada. Por contar com a função de 
- * 'entradas_do_repositorio_linques', o uso é duas vezes maior que a função 
+ * portanto como foi inicialmente iterada. Por contar com a função de
+ * 'entradas_do_repositorio_linques', o uso é duas vezes maior que a função
  * anterior.
  */
    ListaDirEnt entries = entradas_do_repositorio_linques();
@@ -145,7 +146,7 @@ void info_sobre_repositorio_de_linques_ordenada(void) {
    #ifdef __debug__
    const char* ordemstr = ordemdirent_to_str(ordem);
    printf("Ordem Carregada: '%s'\n", ordemstr);
-   #endif 
+   #endif
    entries.ordem = ordem;
    // Seleção baseado na ordem, então a aplicação do algoritmo.
    ordenacao = selecao_do_algoritmo(ordem);
@@ -180,7 +181,7 @@ void info_sobre_repositorio_de_linques_ordenada(void) {
 
 /* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
  *             Funções Auxiliares(declaração da interface privada)
- * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */ 
+ * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */
 static char* const repositorio(void)
    { return getenv("LINKS"); }
 
@@ -268,7 +269,7 @@ static uint32_t semente_aleatoria(void)
       perror(strerror(errno));
    else
       puts("Aberto pipe com sucesso.");
-      
+
    if (read(device, &buffer, sizeof(uint32_t)) == sizeof(uint32_t))
       puts("Lido com sucesso.");
    else
@@ -279,13 +280,13 @@ static uint32_t semente_aleatoria(void)
 
 static void desordena_entradas(ListaDirEnt obj)
 {
-/* O algoritmo embaralha das entradas na lista interna do objeto. 
- * O algoritmo com que ele faz isso é bem simples. Ele apenas faz metade 
+/* O algoritmo embaralha das entradas na lista interna do objeto.
+ * O algoritmo com que ele faz isso é bem simples. Ele apenas faz metade
  * das iterações, e faz uma sorteio de alguma posição, então troca a sequência
  * inicial até a metade pelos valores sorteados.
  */
    const int CICLOS = obj.quantia / 2;
-   int n, selecao, antiga; 
+   int n, selecao, antiga;
    struct dirent* lista = obj.lista, auxiliar;
 
    srand(semente_aleatoria());
@@ -313,53 +314,116 @@ static void alterna(struct dirent* lista, int p, int q)
    lista[q] = auxilar;
 }
 
+typedef struct dirent sDE;
+
+static sDE* alloc_sd(sDE* X)
+{
+   const int sz = sizeof(struct dirent);
+   struct dirent* novo = NULL;
+
+   novo = malloc(sz);
+
+   if (novo == NULL) {
+      perror(strerror(errno));
+      abort();
+   }
+
+   *novo = *X;
+   return novo;
+}
+
+static void dealloc_sd(sDE* X)
+   { free(X); }
+
+static size_t hash_sd(GenT a, size_t C)
+{
+   sDE* obj = (sDE*)a;
+   int64_t inode = (*obj).d_ino;
+
+   return hash_i64(&inode, C);
+}
+
+static bool eq_sd(GenT a, GenT b)
+{
+   char* str_a, *str_b;
+   struct dirent* obj_a, *obj_b;
+
+   obj_a = (struct dirent*)a;
+   obj_b = (struct dirent*)b;
+   str_a = (*obj_a).d_name;
+   str_b = (*obj_b).d_name;
+
+   return strcmp(str_a, str_b) == 0;
+}
+
 static void agrupa_entradas(ListaDirEnt obj)
 {
 /* Nota: algoritmo não foi testado com poucas entradas.*/
-   char* REPO = (char*)repositorio();   
+   char* REPO = (char*)repositorio();
    const int N = obj.quantia;
-   int comeco, ultimo, posicoes[N], n;
    struct dirent* lista = obj.lista;
    char* nome = NULL, *caminho = NULL;
-
-   /* O algoritmo agora tentado será agrupar não Windows caminhos no começo, e
-    * caminhos do Windows no fim. */
-   for (n = 0, ultimo = (N - 1), comeco = 0; n < N; n++)
+   Set saco_lnx = cria_set(hash_sd, eq_sd);
+   Set saco_win = cria_set(hash_sd, eq_sd);
+   struct dirent* entry = NULL;
+   GenT clone = NULL; int n;
+   /* Separa os caminhos em dois grandes conjuntos, então insere da array
+    * de forma ordenada. */
+   for (n = 0; n < N; n++)
    {
       nome = lista[n].d_name;
       caminho = junta_caminhos(REPO, nome);
+      clone = (void*)alloc_sd(&lista[n]);
 
       if (um_caminho_no_windows(caminho))
-         posicoes[comeco++] = n;
+         add_set(saco_win, clone);
       else
-         posicoes[ultimo--] = n;
+         add_set(saco_lnx, clone);
+
       free(caminho);
    }
 
-   #ifdef __debug__
-   print_array(posicoes, N);
-   #endif
+   /* Despejando coisas coletadas dentro da array. Primeiro a parte do Linux,
+    * então depois a parte do Windows. Se for de preferência a inversão da 
+    * ordem, é preciso apenas inverter os laços-whiles abaixo.
+    */
+   n = 0;
 
-   for (n = 0; n < N; n++)
-      alterna(lista, n, posicoes[n]);
+   while (!empty_set(saco_lnx))
+   {
+      clone = deleta_set(saco_lnx);
+      lista[n++] = *((sDE*)clone); 
+      dealloc_sd(clone);
+
+   }
+   while (!empty_set(saco_win)) 
+   {
+      clone = deleta_set(saco_win);
+      lista[n++] = *((sDE*)clone); 
+      dealloc_sd(clone);
+   }
+
+   // Despejando na array ambos conteúdos dos conjuntos...
+   destroi_set(saco_win);
+   destroi_set(saco_lnx);
 }
 
 static ListaDirEnt entradas_do_repositorio_linques(void)
 {
 /* É uma função que faz um clone da iteração, e entrega apenas uma lista
- * dos 'dirent' com o seu tamanho. Fica a cargo do chamador desalocar a 
+ * dos 'dirent' com o seu tamanho. Fica a cargo do chamador desalocar a
  * alocação realizada. */
    const char* caminho = repositorio();
 
    if (caminho == NULL) {
-      perror("Variável não definida!"); 
+      perror("Variável não definida!");
       abort();
    }
 
-   DIR* iteracao = opendir(caminho); 
+   DIR* iteracao = opendir(caminho);
    struct dirent* atual = NULL;
-   /* Ainda sem alguma lista alocada que foi apontada, o valor começar em 
-    * zero, assim já utiliza tal variável como contagem. A ordem inicial é 
+   /* Ainda sem alguma lista alocada que foi apontada, o valor começar em
+    * zero, assim já utiliza tal variável como contagem. A ordem inicial é
     * a que foi iterado, 'nenhuma' no caso representa isso. */
    ListaDirEnt output = { NULL, 0, Nenhuma };
    const int size = sizeof(struct dirent);
@@ -370,7 +434,7 @@ static ListaDirEnt entradas_do_repositorio_linques(void)
    for (atual=readdir(iteracao); atual != NULL; atual=readdir(iteracao))
    {
       if (pular_entradas_desnecessarias(atual))
-         continue; 
+         continue;
 
       output.quantia += 1;
    }
@@ -382,12 +446,12 @@ static ListaDirEnt entradas_do_repositorio_linques(void)
 
    tamanho = size * output.quantia;
    output.lista = (struct dirent*)malloc(tamanho);
-   iteracao = opendir(caminho); 
+   iteracao = opendir(caminho);
 
    for (atual=readdir(iteracao); atual != NULL; atual=readdir(iteracao))
    {
       if (pular_entradas_desnecessarias(atual))
-         continue; 
+         continue;
 
       output.lista[p++] = *atual;
    }
@@ -413,7 +477,7 @@ static bool um_caminho_no_windows(const char* caminho)
    char buffer[comprimento];
 
    readlink(caminho, buffer, comprimento);
-   return (strstr(buffer, MATCH) != NULL); 
+   return (strstr(buffer, MATCH) != NULL);
 }
 
 #if defined(__linux__) && defined(__unit_tests__)
@@ -424,7 +488,7 @@ static void struct_dirent_debug(struct dirent* obj) {
    uint16_t tamanho = (*obj).d_reclen;
 
    printf(
-      "[%-9s | %7d | %d bytes] %s\n", 
+      "[%-9s | %7d | %d bytes] %s\n",
       dtype_str(tipo), fd, tamanho, nome
    );
 }
@@ -446,7 +510,7 @@ static const char* dtype_str(uint32_t code) {
       return "socket";
    else
       return "desconhecido";
-   // Nota: por algum motivo, tal comparação não funciona com 'switch'. 
+   // Nota: por algum motivo, tal comparação não funciona com 'switch'.
 }
 #endif
 
@@ -461,18 +525,18 @@ static bool lincado_a_algo(char* caminho) {
 
    // Preenchendo com caractéres nulos para anular qualquer ruído.
    memset(conteudo, 0x00, MAX);
-   result = readlink(caminho, conteudo, MAX); 
+   result = readlink(caminho, conteudo, MAX);
 
    if (result > 0 && result < MAX) {
       /* Agora verifica se o real 'inode' que o linque liga, é realmente
-       * válido, ou seja, está lá(existe). */ 
-      if (stat(conteudo, &info) == 0) 
-         return true;   
+       * válido, ou seja, está lá(existe). */
+      if (stat(conteudo, &info) == 0)
+         return true;
       else {
          if (errno == ENOENT)
             return false;
          else{
-            perror(strerror(errno)); 
+            perror(strerror(errno));
             abort();
          }
       }
@@ -480,13 +544,13 @@ static bool lincado_a_algo(char* caminho) {
       perror("O caminho foi truncado, é preciso aumentar a capacidade.");
       abort();
    } else {
-      perror(strerror(errno)); 
+      perror(strerror(errno));
       abort();
    }
 }
 
 static char* junta_caminhos(char* path_a, char* path_b) {
-/* Concatena dois caminhos, na ordem dos parâmetros listados. Ele aloca 
+/* Concatena dois caminhos, na ordem dos parâmetros listados. Ele aloca
  * memória na heap, portanto é preciso que o 'caller' libere posteriormente.
  */
    const int GARANTIA = 5;
@@ -508,7 +572,7 @@ static bool pular_entradas_desnecessarias(struct dirent* obj) {
 // Atalhos do atual diretório, e diretório anterior(pai), são desnecessários.
    const char* const CWD = ".";
    const char* const PARENT = "..";
-   char* const nome = obj->d_name; 
+   char* const nome = obj->d_name;
 
    return (strcmp(nome, CWD) == 0 || strcmp(nome, PARENT) == 0);
 }
@@ -536,7 +600,7 @@ static void status_dos_linques_avaliados(int validos, int invalidos) {
    );
 }
 
-static const char* 
+static const char*
 ordemdirent_to_str(OrdemDirEnt tipo_de_ordem)
 {
    switch(tipo_de_ordem)
@@ -560,7 +624,7 @@ ordemdirent_to_str(OrdemDirEnt tipo_de_ordem)
 }
 
 static void status_dos_linques_avaliados_i
-  (int validos, int invalidos, OrdemDirEnt ordem) 
+  (int validos, int invalidos, OrdemDirEnt ordem)
 {
    int total = validos + invalidos;
    const int N = 150;
@@ -599,7 +663,7 @@ static SelecaoAlg selecao_do_algoritmo(OrdemDirEnt tipo_de_ordem)
          return agrupa_entradas;
       case Acesso:
          return ordena_entradas;
-      case Alfabetica: 
+      case Alfabetica:
       case Criacao:
          return ordena_entradas;
       default:
@@ -627,7 +691,7 @@ static OrdemDirEnt carrega_ode(void)
       return Nenhuma;
    }
 
-   result = fread(&buffer, size, 1, database); 
+   result = fread(&buffer, size, 1, database);
 
    if (result * size == size)
       #ifdef __debug__
@@ -645,7 +709,7 @@ static void salva_ode(OrdemDirEnt tipo)
    int result;
 
    stream = fopen(PATH_ORDEMDE, "wb");
-   result = fwrite(&tipo, size, 1, stream); 
+   result = fwrite(&tipo, size, 1, stream);
 
    if (result*size == size)
       #ifdef __debug__
@@ -663,7 +727,7 @@ static void salva_ode(OrdemDirEnt tipo)
 }
 /* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
  *                       Testes Unitários
- * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */ 
+ * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */
 #if defined(__linux__) && defined(__unit_tests__)
 #include "teste.h"
 #include <locale.h>
@@ -680,7 +744,7 @@ TESTE visualizacao_de_todas_ordenacoes(void);
 TESTE algoritmo_de_agrupamento(void);
 TESTE byte_aleatorio(void);
 TESTE sorteio_de_ordenacoes(void);
-TESTE sorteio_e_registro_de_ordenacoes(void); 
+TESTE sorteio_e_registro_de_ordenacoes(void);
 TESTE escolha_da_funcao_certa_pela_ordem(void);
 
 
@@ -696,10 +760,10 @@ int main(void) {
          Unit(simples_listagem_dos_linques, false),
          Unit(funcao_que_clona_iteracao, false),
          Unit(visualizacao_de_todas_ordenacoes, false),
-         Unit(algoritmo_de_agrupamento, false),
-         Unit(byte_aleatorio, false)
+         Unit(algoritmo_de_agrupamento, true),
+         Unit(byte_aleatorio, false),
          // Desativado, já que o 'output' é muito extenso.
-         Unit(nova_visualizacao_com_ordenacao, true),
+         Unit(nova_visualizacao_com_ordenacao, false)
    );
    return EXIT_SUCCESS;
 }
@@ -707,22 +771,22 @@ int main(void) {
 TESTE nova_visualizacao_com_ordenacao(void)
 {
    salva_ode(Nenhuma);
-   info_sobre_repositorio_de_linques_ordenada(); 
+   info_sobre_repositorio_de_linques_ordenada();
 
    salva_ode(Alfabetica);
-   info_sobre_repositorio_de_linques_ordenada(); 
+   info_sobre_repositorio_de_linques_ordenada();
 
    salva_ode(Acesso);
-   info_sobre_repositorio_de_linques_ordenada(); 
+   info_sobre_repositorio_de_linques_ordenada();
 
    salva_ode(Criacao);
-   info_sobre_repositorio_de_linques_ordenada(); 
+   info_sobre_repositorio_de_linques_ordenada();
 
    salva_ode(Aleatoria);
-   info_sobre_repositorio_de_linques_ordenada(); 
+   info_sobre_repositorio_de_linques_ordenada();
 
    salva_ode(Sistema);
-   info_sobre_repositorio_de_linques_ordenada(); 
+   info_sobre_repositorio_de_linques_ordenada();
 }
 
 
@@ -737,8 +801,8 @@ TESTE sorteio_e_registro_de_ordenacoes(void) {
       salva_ode(novo);
 
       printf(
-         "Novo[%d]: %s\tAntigo[%d]: %s\n", 
-         novo, ordemdirent_to_str(novo), 
+         "Novo[%d]: %s\tAntigo[%d]: %s\n",
+         novo, ordemdirent_to_str(novo),
          antigo, ordemdirent_to_str(antigo)
       );
    }
@@ -763,7 +827,7 @@ TESTE escolha_da_funcao_certa_pela_ordem(void)
    }
 }
 
-TESTE sorteio_de_ordenacoes(void) 
+TESTE sorteio_de_ordenacoes(void)
 {
    for (int n = 1; n <= 45; n++) {
       if (n % 5 == 0)
@@ -779,7 +843,7 @@ OrdemDirEnt random_ode(void)
 
    if (SEED_RANDOM_ODE)
       { SEED_RANDOM_ODE = true; srand(time(NULL)); }
-      
+
    int X = (rand() % 5) + 1;
 
    return (OrdemDirEnt)powl(2, X);
@@ -790,16 +854,16 @@ TESTE simples_listagem_dos_linques(void)
    const char* caminho = repositorio();
 
    if (caminho == NULL) {
-      perror("Variável não definida!"); 
+      perror("Variável não definida!");
       abort();
    }
 
-   DIR* iteracao = opendir(caminho); 
+   DIR* iteracao = opendir(caminho);
    struct dirent* atual = NULL;
 
    do {
       atual = readdir(iteracao);
-      
+
       if (atual == NULL) {
          int code = errno;
          char* msg_erro = strerror(code);
@@ -814,7 +878,7 @@ TESTE simples_listagem_dos_linques(void)
 
 TESTE funcao_que_clona_iteracao(void)
 {
-   ListaDirEnt out = entradas_do_repositorio_linques();   
+   ListaDirEnt out = entradas_do_repositorio_linques();
    int posicao;
 
    for (posicao = 0; posicao < out.quantia; posicao++)
@@ -829,20 +893,20 @@ TESTE funcao_que_clona_iteracao(void)
 }
 
 void visualizacao_sd(int p, struct dirent* X)
-{ 
+{
    struct dirent Y = X[p];
    char* caminho = junta_caminhos(repositorio(), Y.d_name);
 
    if (um_caminho_no_windows(caminho))
-      printf("%2dº) %-30s(WINDOWS)\n", p + 1, Y.d_name); 
+      printf("%2dº) %-30s(WINDOWS)\n", p + 1, Y.d_name);
    else
-      printf("%2dº) %s\n", p + 1, Y.d_name); 
+      printf("%2dº) %s\n", p + 1, Y.d_name);
    free(caminho);
 }
 
 TESTE visualizacao_de_todas_ordenacoes(void)
 {
-   ListaDirEnt out = entradas_do_repositorio_linques();   
+   ListaDirEnt out = entradas_do_repositorio_linques();
    int posicao;
 
    out.ordem = Alfabetica;
@@ -886,13 +950,16 @@ TESTE visualizacao_de_todas_ordenacoes(void)
 
 TESTE algoritmo_de_agrupamento(void)
 {
-   ListaDirEnt out = entradas_do_repositorio_linques();   
+   ListaDirEnt out = entradas_do_repositorio_linques();
    int posicao;
 
    puts("\nOrdenação: 'Sistema'");
+   puts("\tAntes da ordenação...");
+   for (posicao = 0; posicao < out.quantia; posicao++)
+      visualizacao_sd(posicao, out.lista);
    // Algoritmo de agrupamento aplicado.
    agrupa_entradas(out);
-
+   puts("\tDepois de ordenado.");
    for (posicao = 0; posicao < out.quantia; posicao++)
       visualizacao_sd(posicao, out.lista);
 
@@ -909,7 +976,7 @@ TESTE byte_aleatorio(void){
       perror(strerror(errno));
    else
       puts("Aberto pipe com sucesso.");
-      
+
    if (read(device, &buffer, sizeof(uint32_t)) == sizeof(uint32_t))
       puts("Lido com sucesso.");
    else
