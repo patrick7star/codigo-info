@@ -23,6 +23,7 @@
 // Bibliiotecas externas:
 #include "impressao.h"
 #include "conjunto_ref.h"
+#include "macros.h"
 
 // Caractéres Unicode de representão itens a serem listados.
 const wchar_t VALIDO   = L'\U0001f7e2';
@@ -58,6 +59,7 @@ typedef SelecaoAlg SAlg;
 typedef OrdemDirEnt ODEnt;
 typedef const char* CStr;
 typedef struct dirent sDE;
+typedef size_t SizeT;
 
 static void  status_dos_linques_avaliados_i  (int v, int i, ODEnt o);
 static LDE   entradas_do_repositorio_linques (void);
@@ -69,9 +71,15 @@ static void  agrupa_entradas                 (LDE obj);
 static char* repositorio                     (void);
 static SAlg  selecao_do_algoritmo            (ODEnt);
 static ODEnt carrega_ode                     (void);
+static sDE*  alloc_sd                        (sDE* X);
+static void  dealloc_sd                      (sDE* X);
+static SizeT hash_sd                         (GenT a, size_t);
+static bool  eq_sd                           (GenT, GenT);
 // Funções auxiliares de remendo de código.
 static void realiza_nada(LDE obj) { (void)obj; }
+#ifndef __debug__
 static void pass(void) {}
+#endif
 
 /* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
  *                         Interface Pública
@@ -92,6 +100,8 @@ const char* ordemdirent_to_str(OrdemDirEnt tipo_de_ordem)
          return "Acesso";
       case Aleatoria:
          return "Aleatória";
+      case Funcional:
+         return stringfy(Funcional);
       default:
          perror("Não é possível alcançar aqui!");
          exit(EXIT_FAILURE);
@@ -232,6 +242,54 @@ void info_sobre_repositorio_de_linques_ordenada(void) {
 /* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
  *             Funções Auxiliares(declaração da interface privada)
  * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */
+static void agrupa_apenas_funcionais(ListaDirEnt obj)
+{
+/* Apenas a cópia do algoritmo do agrupamento por sistemas, aplicado também
+ * no caso de linques quebradas ou funcionais. É preciso mexer apenas em 
+ * alguns pontos que funciona. */
+   char* REPO = (char*)repositorio();
+   const int N = obj.quantia;
+   struct dirent* lista = obj.lista;
+   char* nome = NULL, *caminho = NULL;
+   Set funcional = cria_set(hash_sd, eq_sd);
+   Set quebrado = cria_set(hash_sd, eq_sd);
+   GenT clone = NULL; int n;
+   /* Separa os caminhos em dois grandes conjuntos, então insere da array
+    * de forma ordenada. */
+   for (n = 0; n < N; n++)
+   {
+      nome = lista[n].d_name;
+      caminho = junta_caminhos(REPO, nome);
+      clone = (void*)alloc_sd(&lista[n]);
+
+      if (lincado_a_algo(caminho))
+         add_set(funcional, clone);
+      else
+         add_set(quebrado, clone);
+
+      free(caminho);
+   }
+
+   n = 0; // Inicia posição do zero(reutiliza o contador).
+
+   while (!empty_set(funcional))
+   {
+      clone = deleta_set(funcional);
+      lista[n++] = *((sDE*)clone); 
+      dealloc_sd(clone);
+
+   }
+   while (!empty_set(quebrado)) 
+   {
+      clone = deleta_set(quebrado);
+      lista[n++] = *((sDE*)clone); 
+      dealloc_sd(clone);
+   }
+
+   destroi_set(funcional);
+   destroi_set(quebrado);
+}
+
 static char* repositorio(void)
    { return getenv("LINKS"); }
 
@@ -312,17 +370,14 @@ static void ordena_entradas(ListaDirEnt obj)
 static uint32_t semente_aleatoria(void)
 {
    const char* const CAMINHO = "/dev/urandom";
+   const int size = sizeof(uint32_t);
    int device = open(CAMINHO, O_NONBLOCK);
    uint32_t buffer = 0x00000000;
 
    if (device == Failed)
       perror(strerror(errno));
-   else
-      puts("Aberto pipe com sucesso.");
 
-   if (read(device, &buffer, sizeof(uint32_t)) == sizeof(uint32_t))
-      puts("Lido com sucesso.");
-   else
+   if (read(device, &buffer, size) < size)
       perror(strerror(errno));
 
    return buffer;
@@ -349,10 +404,6 @@ static void desordena_entradas(ListaDirEnt obj)
       if (selecao == antiga)
          continue;
 
-      /*/
-      auxiliar = lista[n - 1];
-      lista[n - 1] = lista[selecao];
-      lista[selecao] = auxiliar; */
       alterna(lista, (n - 1), selecao);
    }
 }
@@ -691,8 +742,11 @@ static SelecaoAlg selecao_do_algoritmo(OrdemDirEnt tipo_de_ordem)
       case Acesso:
          return ordena_entradas;
       case Alfabetica:
+         return ordena_entradas;
       case Criacao:
          return ordena_entradas;
+      case Funcional:
+         return agrupa_apenas_funcionais;
       default:
          perror("Não existe tal opção na codificação.");
          abort();
