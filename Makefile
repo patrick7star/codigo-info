@@ -101,15 +101,16 @@ test-linque:
 	gcc -I$(LIB_UTILS_HEADERS) -o ./bin/tests/ut-linque build/linque-test.o \
 		 -L$(LIB_UTILS_ST_BINS) -lcolecoes -lvisualiza -lteste -lm
 
-classificacao2:
-	gcc -I/usr/include/libxml2 -o bin/tests/ut_classificacao2 src/classificacao2.c -lxml2
-
 test-menu:
-	gcc -I$(HEADERS_DBG) -D__unit_tests__ \
-		-o bin/tests/ut_menu build/linque.o build/variaveis_de_ambiente.o \
-			build/filtro.o build/classificacao.o src/menu.c \
-		-L$(LIB_DBG) -lhtref -llegivel -lmemoria -llaref -lestringue \
-			-limpressao -lterminal
+	@gcc -I$(LIB_UTILS_HEADERS) -D__unit_tests__ -D__debug__ \
+		 -c -o build/menu-test.o src/menu.c
+	@echo "Objeto menu-test.o gerado em 'build'."
+	gcc -I$(LIB_UTILS_HEADERS) -o bin/tests/ut-menu build/linque.o \
+			build/menu-test.o build/variaveis_de_ambiente-debug.o \
+			build/filtro-debug.o build/classificacao-debug.o \
+			build/funcionalidades-debug.o \
+		-L$(LIB_UTILS_ST_BINS) -lcolecoes -lbasico -lestringue -lvisualiza \
+									  -lterminal -lm -lcomputa -lteste
 
 test-funcionalidades:
 	gcc -c -D__unit_tests__ -D__debug__ -I$(LIB_UTILS_HEADERS) -std=c11 \
@@ -117,6 +118,17 @@ test-funcionalidades:
 	gcc -I$(LIB_UTILS_HEADERS) -o \
 		bin/tests/ut-fucionalidades build/funcionalidades-test.obj \
 		-L$(LIB_UTILS_ST_BINS) -lteste -lm
+#=== === === === === === === === === === === === === === === ==== == === ==
+obj-linque:
+	@gcc -I$(LOCAL_UTILS_HEADERS) -O3 -Oz -Wall -pedantic -Wextra -Werror \
+		-c -o build/linque.o src/linque.c
+	@echo "Compilado objeto do 'linque'."
+
+obj-menu:
+	@gcc -I$(LOCAL_UTILS_HEADERS) -O3 -Oz -Wall -pedantic -Wextra -Werror \
+		-c -o build/menu.o src/menu.c
+	@echo "Compilado objeto do 'menu'."
+
 #=== === === === === === === === === === === === === === === ==== == === ==
 
 cria-raiz-programas:
@@ -209,7 +221,7 @@ debug:
 			-lcolecoes -lcomputa -lvisualiza -lm -lterminal
 	@echo "Lincando ambos objetos, também verifica algum 'bad coding'."
 
-release: pacotes-externos-release cmd-frequencia-release
+release: obj-linque obj-menu pacotes-externos-release cmd-frequencia-release
 	@gcc -I./lib/include -O3 -Wall -pedantic -Wextra \
 		-c -o build/variaveis_de_ambiente.o src/variaveis_de_ambiente.c \
 		-L./lib -lestringue
@@ -221,17 +233,11 @@ release: pacotes-externos-release cmd-frequencia-release
 	@$(CLANG) -I$(LIB_UTILS_HEADERS) -O3 -Oz -Wall -pedantic -Wextra \
 		-c -o build/funcionalidades.o src/funcionalidades.c 
 	@gcc -I./lib/include -O3 -Oz -Wall -pedantic -Wextra \
-		-c -o build/menu.o src/menu.c 
-	@echo "Compilado objeto do 'menu'."
-	@gcc -I./lib/include -O3 -Oz -Wall -pedantic -Wextra \
 		-c -o build/classificacao.o src/classificacao.c
 	@echo "Compilado objeto do 'classificacao'."
 	@gcc -I./lib/include -O3 -Oz -Wall -pedantic -Wextra \
 		-c -o build/filtro.o src/filtro.c 
 	@echo "Compilado objeto do 'filtro'."
-	@gcc -I$(LOCAL_UTILS_HEADERS) -O3 -Oz -Wall -pedantic -Wextra -Werror \
-		-c -o build/linque.o src/linque.c
-	@echo "Compilado objeto do 'linque'."
 	@gcc -I$(LOCAL_UTILS_HEADERS) -D__release__ \
 		-o./bin/$(NOME) \
 			build/main.o build/variaveis_de_ambiente.o \
