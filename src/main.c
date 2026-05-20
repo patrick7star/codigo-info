@@ -85,16 +85,11 @@ void verificando_checacao_de_executavel(void) {
 }
 
 void main(int total, char* argumentos[]) {
-   // funcao_existencia_do_caminho (argumentos, total);
-   // testando_com_caminhos_do_argumento(argumentos, total);
-   // teste_simples_do_processa_projeto(argumentos, total);
-   // verificando_checacao_de_executavel();
-
    // Ativando caractéres Unicode ...
    char* lang = getenv("LANG");
    setlocale(LC_CTYPE, lang);
    
-   menu_interface_do_programa(argumentos, total);
+   menu_interface_do_programa_i(argumentos, total);
 }
 
 #elif defined(__release__)
