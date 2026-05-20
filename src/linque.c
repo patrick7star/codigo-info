@@ -42,12 +42,6 @@ static bool pular_entradas_desnecessarias(struct dirent* obj);
 static void status_dos_linques_avaliados(int validos, int invalidos);
 static bool um_caminho_no_windows(const char* caminho);
 
-typedef enum {
-   Nenhuma = 1 << 0,       Alfabetica  = 1 << 1,
-   Criacao = 1 << 2,       Acesso      = 1 << 3,
-   Sistema = 1 << 4,       Aleatoria   = 1 << 5
-} OrdemDirEnt ;
-
 enum os_check { Failed = -1, Okay };
 
 typedef struct {
@@ -56,27 +50,83 @@ typedef struct {
    int quantia;
    OrdemDirEnt ordem;
 
-} ListaDirEnt;
+} ListaDirEnt, LDE;
 // Apelidos de uma função que retorna 'void' e recebe uma 'ListaDirEnt'.
 typedef void (*SelecaoAlg)(ListaDirEnt);
+// Apelidos prá alinhar as declarações abaixo:
+typedef SelecaoAlg SAlg;
+typedef OrdemDirEnt ODEnt;
+typedef const char* CStr;
+typedef struct dirent sDE;
 
-static void status_dos_linques_avaliados_i(int v, int i, OrdemDirEnt o);
-static ListaDirEnt entradas_do_repositorio_linques(void);
-static void free_lde(ListaDirEnt obj);
-static void ordena_entradas(ListaDirEnt obj);
-static void desordena_entradas(ListaDirEnt obj);
-// static void alterna(struct dirent* lista, int p, int q)
-static void agrupa_entradas(ListaDirEnt obj);
-static void realiza_nada(ListaDirEnt obj) {}
-static char* const repositorio(void);
-static SelecaoAlg selecao_do_algoritmo(OrdemDirEnt);
-static OrdemDirEnt carrega_ode(void);
-static void salva_ode(OrdemDirEnt);
-static const char* ordemdirent_to_str(OrdemDirEnt);
+static void  status_dos_linques_avaliados_i  (int v, int i, ODEnt o);
+static LDE   entradas_do_repositorio_linques (void);
+static void  free_lde                        (LDE obj);
+static void  ordena_entradas                 (LDE obj);
+static void  desordena_entradas              (LDE obj);
+static void  alterna                         (sDE * l, int p, int q);
+static void  agrupa_entradas                 (LDE obj);
+static char* repositorio                     (void);
+static SAlg  selecao_do_algoritmo            (ODEnt);
+static ODEnt carrega_ode                     (void);
+// Funções auxiliares de remendo de código.
+static void realiza_nada(LDE obj) { (void)obj; }
+static void pass(void) {}
 
 /* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
  *                         Interface Pública
  * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */
+const char* ordemdirent_to_str(OrdemDirEnt tipo_de_ordem)
+{
+   switch(tipo_de_ordem)
+   {
+      case Nenhuma:
+         return "Nenhuma";
+      case Sistema:
+         return "Sistema";
+      case Alfabetica:
+         return "Alfabética";
+      case Criacao:
+         return "Criação";
+      case Acesso:
+         return "Acesso";
+      case Aleatoria:
+         return "Aleatória";
+      default:
+         perror("Não é possível alcançar aqui!");
+         exit(EXIT_FAILURE);
+   }
+}
+
+void salva_ode(OrdemDirEnt tipo)
+{
+   FILE* stream = NULL;
+   const int size = sizeof(int);
+   int result;
+
+   stream = fopen(PATH_ORDEMDE, "wb");
+   result = fwrite(&tipo, size, 1, stream);
+
+   if (result*size == size)
+      #ifdef __debug__
+      puts("Escrito com sucesso.");
+      #else
+      pass();
+      #endif
+   else
+      #ifdef __debug__
+      printf("Escreveu %d bytes apenas!\n", result * size);
+      #else
+      pass();
+      #endif
+
+   if (fclose(stream) == Failed)
+      #ifdef __debug__
+      perror(strerror(errno));
+      #else
+      pass();
+      #endif
+}
 void info_sobre_repositorio_de_linques(void) {
 /* Lista todas entradas do diretório que representa o repositório de linques,
  * se houver algum, ou a variável que direciona ela estiver bem definida.
@@ -134,10 +184,10 @@ void info_sobre_repositorio_de_linques_ordenada(void) {
    ListaDirEnt entries = entradas_do_repositorio_linques();
    int posicao, validos = 0, invalidos = 0;
    const int FINAL = entries.quantia - 1;
-   const char* caminho = repositorio();
+   char* caminho = repositorio();
    struct dirent* atual = NULL;
    wchar_t status = L'\0';
-   char* nome = NULL, *aux = NULL, *base = (char*)caminho;
+   char* nome = NULL, *aux = NULL, *base = caminho;
    SelecaoAlg ordenacao;
    OrdemDirEnt ordem;
 
@@ -182,7 +232,7 @@ void info_sobre_repositorio_de_linques_ordenada(void) {
 /* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
  *             Funções Auxiliares(declaração da interface privada)
  * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */
-static char* const repositorio(void)
+static char* repositorio(void)
    { return getenv("LINKS"); }
 
 static bool a_maior_b_alfabetica(struct dirent a, struct dirent b)
@@ -287,11 +337,11 @@ static void desordena_entradas(ListaDirEnt obj)
  */
    const int CICLOS = obj.quantia / 2;
    int n, selecao, antiga;
-   struct dirent* lista = obj.lista, auxiliar;
+   struct dirent* lista = obj.lista;
 
    srand(semente_aleatoria());
 
-   for (n = 1; n <= CICLOS; n++)
+   for (selecao = 0, n = 1; n <= CICLOS; n++)
    {
       antiga = selecao;
       selecao = rand() % obj.quantia;
@@ -299,9 +349,11 @@ static void desordena_entradas(ListaDirEnt obj)
       if (selecao == antiga)
          continue;
 
+      /*/
       auxiliar = lista[n - 1];
       lista[n - 1] = lista[selecao];
-      lista[selecao] = auxiliar;
+      lista[selecao] = auxiliar; */
+      alterna(lista, (n - 1), selecao);
    }
 }
 
@@ -314,7 +366,6 @@ static void alterna(struct dirent* lista, int p, int q)
    lista[q] = auxilar;
 }
 
-typedef struct dirent sDE;
 
 static sDE* alloc_sd(sDE* X)
 {
@@ -365,7 +416,6 @@ static void agrupa_entradas(ListaDirEnt obj)
    char* nome = NULL, *caminho = NULL;
    Set saco_lnx = cria_set(hash_sd, eq_sd);
    Set saco_win = cria_set(hash_sd, eq_sd);
-   struct dirent* entry = NULL;
    GenT clone = NULL; int n;
    /* Separa os caminhos em dois grandes conjuntos, então insere da array
     * de forma ordenada. */
@@ -600,29 +650,6 @@ static void status_dos_linques_avaliados(int validos, int invalidos) {
    );
 }
 
-static const char*
-ordemdirent_to_str(OrdemDirEnt tipo_de_ordem)
-{
-   switch(tipo_de_ordem)
-   {
-      case Nenhuma:
-         return "Nenhuma";
-      case Sistema:
-         return "Sistema";
-      case Alfabetica:
-         return "Alfabética";
-      case Criacao:
-         return "Criação";
-      case Acesso:
-         return "Acesso";
-      case Aleatoria:
-         return "Aleatória";
-      default:
-         perror("Não é possível alcançar aqui!");
-         exit(EXIT_FAILURE);
-   }
-}
-
 static void status_dos_linques_avaliados_i
   (int validos, int invalidos, OrdemDirEnt ordem)
 {
@@ -696,35 +723,14 @@ static OrdemDirEnt carrega_ode(void)
    if (result * size == size)
       #ifdef __debug__
       puts("Leu tudo perfeitamente.");
+      #else
+      pass();
       #endif
    else
       return Nenhuma;
    return buffer;
 }
 
-static void salva_ode(OrdemDirEnt tipo)
-{
-   FILE* stream = NULL;
-   const int size = sizeof(int);
-   int result;
-
-   stream = fopen(PATH_ORDEMDE, "wb");
-   result = fwrite(&tipo, size, 1, stream);
-
-   if (result*size == size)
-      #ifdef __debug__
-      puts("Escrito com sucesso.");
-      #endif
-   else
-      #ifdef __debug__
-      printf("Escreveu %d bytes apenas!\n", result * size);
-      #endif
-
-   if (fclose(stream) == Failed)
-      #ifdef __debug__
-      perror(strerror(errno));
-      #endif
-}
 /* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
  *                       Testes Unitários
  * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */
