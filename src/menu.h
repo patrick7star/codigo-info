@@ -10,6 +10,7 @@
  struct Opcao { char curta; char* longa; char* descricao; char* metavar; };
 
  void menu_interface_do_programa (char* args[], int total);
+ void menu_interface_do_programa_i(char* args[], int total);
  void mostrar_manual(
       const char* nome, const char* modo_de_uso, const char* descricao, 
       struct Opcao* opcoes, const int n
