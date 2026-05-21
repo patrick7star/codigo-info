@@ -118,6 +118,7 @@ test-funcionalidades:
 	gcc -I$(LIB_UTILS_HEADERS) -o \
 		bin/tests/ut-fucionalidades build/funcionalidades-test.obj \
 		-L$(LIB_UTILS_ST_BINS) -lteste -lm
+
 #=== === === === === === === === === === === === === === === ==== == === ==
 obj-linque:
 	@gcc -I$(LOCAL_UTILS_HEADERS) -O3 -Oz -Wall -pedantic -Wextra -Werror \

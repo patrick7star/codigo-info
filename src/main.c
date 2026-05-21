@@ -39,56 +39,18 @@
  * compilação, a constante de debug ou teste unitário, seja como está sendo
  * chamado agora.
  */
-#ifdef __unit_tests__
+#ifdef __debug__
 /* == === === === === === === === === === === === === === === ==== == === =
  *                       Testes Unitários
  *                    da Combinação de Arquivos 
  *                          Acima
  * == === === === === === === === === === === === === === === ==== == === */ 
-
-void teste_simples_do_processa_projeto(char* args[], int t) {
-   for (size_t k = 1; k <= t; k++) {
-      char* path = args[k];
-      // pula caminhos inválidos.
-      if (!existe(path)) continue;
-      struct diretorio_info agregado = processa_projeto(args[k]);
-      // visualização da informação agregada.
-      visualiza_diretorio_info (&agregado);
-   }
-}
-
-void verificando_checacao_de_executavel(void) {
-   char* entradas[] = {
-      "primos/target/release/primos",
-      "alternador-wallpapers/target/release/alternador_wallpapers",
-		"bin/codigo_info",
-		"bin/codigo_info_debug",
-   };
-   char* raiz = getenv ("RUST_CODES");
-   char caminho[300];
-
-   for (size_t i = 1; i <= 2; i++) {
-		int indice = i - 1;
-      strcpy (caminho, ""); // zerando string.
-      strcat (caminho, raiz);
-      strcat (caminho, "/");
-      strcat (caminho, entradas[indice]);
-      assert (e_um_executavel (caminho));
-      printf ("[ELF] %s.\n", caminho);
-   }
-
-   for (size_t i = 3; i <= 4; i++) {
-		char* caminho = entradas[i - 1];
-      printf ("[ELF] %s.\n", caminho);
-      assert (e_um_executavel (caminho));
-	}
-}
-
-void main(int total, char* argumentos[]) {
+void main(int total, char* argumentos[]) 
+{
    // Ativando caractéres Unicode ...
    char* lang = getenv("LANG");
    setlocale(LC_CTYPE, lang);
-   
+
    menu_interface_do_programa_i(argumentos, total);
 }
 
@@ -101,7 +63,7 @@ int main(int total, char* argumentos[])
    char* lang = getenv("LANG");
    setlocale(LC_CTYPE, lang);
 
-   menu_interface_do_programa(argumentos, total);
+   menu_interface_do_programa_i(argumentos, total);
    return EXIT_SUCCESS;
 }
 #endif
