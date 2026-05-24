@@ -94,6 +94,13 @@ variaveis_de_ambiente:
 		-L$(LOCAL_UTILS_BINS) -lteste -lcomputa -lvisualiza -lcolecoes \
 			 -lm
 
+test-exibidorvar:
+	gcc -g3 -O0 -I$(LOCAL_UTILS_HEADERS) -Wall \
+		-D__unit_tests__ -D__debug__ \
+		-o ./bin//tests/ut-exibidorvar ./src/variaveis_de_ambiente.c \
+		-L$(LOCAL_UTILS_BINS) -lteste -lcomputa -lvisualiza -lcolecoes \
+			 -lm
+
 test-linque:
 	gcc -g3 -O0 -I$(LIB_UTILS_HEADERS) -Wall -pedantic \
 					-D__unit_tests__ -D__debug__ \
@@ -188,6 +195,10 @@ cmd-frequencia-release: cria-raiz-programas
 		-Llib/ -lteste -lvisualiza
 	@echo "Lincados num binário chamado 'cmd-frequencia'."
 
+caminho-base:
+	@rustc --out-dir=lib/ --crate-type cdylib --crate-name caminhobase \
+			 pacotes-externos/src/linque.rs
+	@echo "Biblioteca dinâmica 'libcaminhobase' gerada em 'lib'."
 #=== === === === === === === === === === === === === === === ==== == === ===
 debug:
 	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic \

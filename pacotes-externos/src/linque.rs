@@ -5,9 +5,8 @@ use std::os::unix::fs::symlink;
 #[cfg(target_os="windows")]
 use std::os::windows::fs::{symlink_file as symlink};
 use std::env::current_exe;
-use std::path::PathBuf;
-use std::ffi::{OsStr};
-use std::path::{Path, Component};
+use std::ffi::{OsStr, c_char, CString};
+use std::path::{PathBuf, Path, Component};
 use std::env::{var, VarError};
 use std::io;
 
@@ -34,6 +33,80 @@ pub fn computa_caminho(caminho_str:&str) -> PathBuf {
       } Err(_) =>
          { panic!("não foi possível obter o caminho do executável!"); }
    }
+}
+
+pub fn linca_executaveis(nome_do_linque: &str) 
+{
+   match cria_linques_locais(nome_do_linque) {
+      Ok(_) => 
+         { println!("O linque local foi criado com sucesso."); }
+      Err(erro) => match erro.kind() {
+         io::ErrorKind::AlreadyExists => {
+            if cfg!(debug_assertions)
+               { println!("Já existe um linque local do 'modo debug'."); }
+            else 
+               { println!("Já existe um linque local."); }
+         } _ =>
+         // Demais erros ainda não tratados.
+            { panic!("{}", erro); }
+      }
+   };
+
+   match cria_linques_no_repositorio(nome_do_linque) {
+      Ok(caminho) => { 
+         assert!(caminho.exists()); 
+         println!("Linque criado com sucesso em $LINKS."); 
+      } Err(classificacao_do_erro) => { 
+         match classificacao_do_erro.kind() {
+            io::ErrorKind::AlreadyExists =>
+               { println!("Já existe um linque em $LINKS."); }
+            io::ErrorKind::Unsupported =>
+               { println!("Sistema ou ambiente não suportado.");}
+            _ =>
+               { panic!("{}", classificacao_do_erro); }
+         }
+      } 
+   }
+}
+
+/// Remove trechos até a base dada, se não houve uma, então retorna None.
+fn retira_a_base(base: &str) -> Option<PathBuf>
+{
+   let mut absoluto = current_exe().unwrap();
+   let correspodente = Some(OsStr::new(base));
+
+   while absoluto.file_name() != correspodente
+      { absoluto.pop(); }
+
+   if absoluto.file_name().is_none()
+      { return None; }
+   Some(absoluto)
+}
+
+/** Isso está sendo feito aqui, já aproveitando a função que faz algo similar.
+ * Também porque o Rust tem um bom manipulador de caminhos, diferente do C,
+ * quen não possui nada na biblioteca padrão. */
+pub extern "C" fn computa_caminho_externo(pathname: *mut c_char) 
+  -> *mut c_char
+{
+   let output = match retira_a_base("codigo-info") {
+      Some(path) => path,
+      None =>
+         { return std::ptr::null_mut::<c_char>() }
+   };
+   let complemento = unsafe { CString::from_raw(pathname) };
+   // Converte novamente para string.
+   let caminho_string = complemento.into_string().unwrap();
+   let caminho = output.join(Path::new(&caminho_string));
+   /* Pipeline bem cuidada da transformação. É preciso levar ela de um PathBuf
+    * até uma CString, na verdade sua versão raw array. */
+   let caminho_oss = caminho.into_os_string();
+   let caminho_box_oss = caminho_oss.into_boxed_os_str();
+   let caminho_str = caminho_box_oss.to_str();
+   let output = CString::new(caminho_str.unwrap()).unwrap();
+
+    // Retornando a CString como uma raw string.
+    output.into_raw() as *mut c_char 
 }
 
 fn cria_linques_no_repositorio(nome_do_linque: &str) -> io::Result<PathBuf> 
@@ -99,36 +172,43 @@ fn cria_linques_locais(nome_do_linque: &str) -> io::Result<PathBuf>
    Ok(destino)
 }
 
-pub fn linca_executaveis(nome_do_linque: &str) 
-{
-   match cria_linques_locais(nome_do_linque) {
-      Ok(_) => 
-         { println!("O linque local foi criado com sucesso."); }
-      Err(erro) => match erro.kind() {
-         io::ErrorKind::AlreadyExists => {
-            if cfg!(debug_assertions)
-               { println!("Já existe um linque local do 'modo debug'."); }
-            else 
-               { println!("Já existe um linque local."); }
-         } _ =>
-         // Demais erros ainda não tratados.
-            { panic!("{}", erro); }
-      }
-   };
+#[cfg(test)]
+mod tests {
+   use super::{CString, c_char};
 
-   match cria_linques_no_repositorio(nome_do_linque) {
-      Ok(caminho) => { 
-         assert!(caminho.exists()); 
-         println!("Linque criado com sucesso em $LINKS."); 
-      } Err(classificacao_do_erro) => { 
-         match classificacao_do_erro.kind() {
-            io::ErrorKind::AlreadyExists =>
-               { println!("Já existe um linque em $LINKS."); }
-            io::ErrorKind::Unsupported =>
-               { println!("Sistema ou ambiente não suportado.");}
-            _ =>
-               { panic!("{}", classificacao_do_erro); }
-         }
-      } 
+   #[test]
+   fn visualizando_o_computa_caminho()
+   {
+      println!("{:?}", super::computa_caminho("nova_pasta"));
+   }
+
+   fn imprime_um_caminho_em_c(pathname: *const c_char)
+   {
+      let mut cursor: isize = 0;
+
+      loop { unsafe {
+         let ptr = pathname.offset(cursor);
+         let byte: i8 = *ptr;
+         let code = byte as u32;
+         let caractere = char::from_u32_unchecked(code);
+
+         if code == 0x00 
+            { break; }
+         print!("{}", caractere);
+         cursor += 1;
+      }}
+      print!("\n");
+   }
+
+   #[test]
+   fn simulacao_da_aplicacao_em_c()
+   {
+      let a = "data/info/saldo.txt";
+      let b = CString::new(a).unwrap();
+      let c: *mut c_char;
+
+      c = super::computa_caminho_externo(b.into_raw());
+
+      imprime_um_caminho_em_c(c);
    }
 }
