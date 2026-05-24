@@ -22,6 +22,8 @@ with tarfile.TarFile(ARQUIVO, mode="w") as arquivo:
    arquivo.add("./lib/include")
    # Adicionando biblioteca estática do Rust.
    arquivo.add("./lib/libutilitarios.rlib")
+   # Adicionando biblioteca dinâmica de C, mas feito do código Rust.
+   arquivo.add("./lib/libcaminhobase.so")
 
    print("\nTudo que foi colocado no arquivo:")
    arquivo.list()
