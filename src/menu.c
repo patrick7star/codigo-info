@@ -108,9 +108,9 @@ static OrdemDirEnt str_to_ode(const char* In)
  * ser escrita de forma correta) na respectiva 'OrdemDirEnt'. */
    int t = strlen(In);
    char Out[2 * t];
-   char* In_a = minuscula_ascii(In);
+   char* In_a = minuscula_ascii((char*)In);
    bool ordem_criacao, ordem_acesso, ordem_aleatoria, ordem_sistema,
-        ordem_alfabetica;
+        ordem_alfabetica, ordem_funcional;
 
    /* Faz a cópia da string minúscula, então libera a memória alocada no 
     * processo da transformação. */
@@ -133,6 +133,7 @@ static OrdemDirEnt str_to_ode(const char* In)
       strcmp(Out, "criaçao") == 0 || 
       strcmp(Out, "criacao") == 0
    );
+   ordem_funcional = (strcmp(Out, "funcional") == 0);
 
    if (ordem_alfabetica)
       return Alfabetica;
@@ -144,6 +145,8 @@ static OrdemDirEnt str_to_ode(const char* In)
       return Acesso;
    else if (ordem_criacao)
       return Criacao;
+   else if (ordem_funcional)
+      return Funcional;
    else
       return Nenhuma;
 }
@@ -262,7 +265,7 @@ static void visualiza_opcao(struct Opcao * obj) {
       strcmp(obj->descricao, VAZIA) == IgualStr ||
       strcmp(obj->longa, VAZIA) == IgualStr
    };
-   char argumento[UCHAR_MAX] = {'0'};
+   char argumento[UCHAR_MAX] = {0x00};
 
    if (algumas_da_opcoes_invalida) {
       perror("'longa' e 'descrição' tem que ter algo válido.");
@@ -272,15 +275,16 @@ static void visualiza_opcao(struct Opcao * obj) {
    if ((*obj).metavar == NULL) 
       strcpy(argumento, VAZIA);
    else {
-      strcat(argumento, "=");
+      strcat(argumento, " <");
       strcat(argumento, (*obj).metavar);
+      strcat(argumento, ">");
    }
 
    if ((*obj).curta == 0x0)
       printf( "%s--%s%s\t%s.\n", RECUO, obj->longa, argumento, obj->descricao);
    else
       printf(
-         "%s-%c --%s%s\n\t%s.\n", 
+         "%s-%c --%s%s\n%s.\n\n", 
          RECUO, obj->curta, obj->longa, argumento, obj->descricao
       );
 }
@@ -299,7 +303,7 @@ static void folha_de_ajuda(void) {
       "finida em listar todos tipos de arquivos, dada uma determinada raíz"
       ". Entretanto, uma função que ele faz é listar os diretórios listados "
       "na variável PATH, que é igualmente importante no processo de desen"
-      "volvimento."
+      "volvimento"
    };
    struct Opcao OPCOES[] = {
       (struct Opcao) {
@@ -314,22 +318,32 @@ static void folha_de_ajuda(void) {
       },
       (struct Opcao) {
          'L', "repositorio-links",
-         "Os linques dos repostiórios de linques de programas feitos, e se "
-         "os linques ali, ainda são válidos", NULL
+      "\t  Os linques dos repostiórios de linques de programas feitos, e se\n"
+      "\tos linques ali, ainda são válidos. Quando passado o argumento,\n"
+      "\tele não exibe apenas como é coletado do sistema arquivo, e sim\n"
+      "\taplica uma ordenação ou algoritmos similares para ordernar a\n"
+      "\texibição. A estado já fica registrado prá próxima chamada, se\n"
+      "\tnão foi pedido outros tipo de 'modo' algum tipo de ordenação entre\n"
+      "\tas seguintes opções: Nenhuma, Alfabético, Aleatória, Criação,\n"
+      "\tAcesso, Funcional e Sistema.\n"
+      "\t  Observe que ao digitar, você pode variar um pouco a escrita das\n"
+      "\tmodos listados, seu 'case' ou mesmo as acentuações, o programa\n"
+      "\tprovavelmente adivinhará sua escolha, nem todos modos, porém a\n"
+      "\tmaioria das escritas são pegas", "ORDENACAO"
       },
       (struct Opcao) {
          't', "todos-comandos",
-         "Todo histórico de comandos já digitado, e sua respectiva "
-         "frequência", NULL
+         "\t\tTodo histórico de comandos já digitado, e sua respectiva\n"
+         "\tfrequências", NULL
       },
       (struct Opcao) {
          'M', "comandos-mais-relevantes",
-         "Apenas os comandos com alguma relevância numérica", NULL
+         "\tApenas os comandos com alguma relevância numérica", NULL
       },
       (struct Opcao) {
          'e', "rust-cache",
-         "A o gerenciador de pacotes externos faz um bocado de downloads, "
-         "este aqui lista e organiza-os.", NULL
+         "\t\tA o gerenciador de pacotes externos faz um bocado de downloads,\n"
+         "\teste aqui lista e organiza-os", NULL
       }
    };
    const int size = sizeof(struct Opcao);
@@ -353,6 +367,8 @@ TESTE breve_promo_do_menu(void);
 TESTE descobrindo_forma_longa(void);
 TESTE novo_menu_extendido(void);
 TESTE conversao_em_enums(void);
+TESTE como_esta_o_menu(void)
+   { folha_de_ajuda(); }
 
 int main(int total, char* argumentos[]) 
 {
@@ -361,8 +377,9 @@ int main(int total, char* argumentos[])
 
    executa_testes_b(
       true, 4,
+         Unit(como_esta_o_menu, true),
          // Geralmente desativado, pois as entradas e avaliações são manuais.
-         Unit(novo_menu_extendido, true),
+         Unit(novo_menu_extendido, false),
          Unit(conversao_em_enums, false),
          Unit(breve_promo_do_menu, false),
          Unit(descobrindo_forma_longa, false)
