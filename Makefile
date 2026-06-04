@@ -101,12 +101,18 @@ test-exibidorvar:
 		-L$(LOCAL_UTILS_BINS) -lteste -lcomputa -lvisualiza -lcolecoes \
 			 -lm
 
-test-linque:
-	gcc -g3 -O0 -I$(LIB_UTILS_HEADERS) -Wall -pedantic \
+test-linquers:
+	rustc --out-dir=bin/tests/pacotes-externos/ --test pacotes-externos/src/linque.rs
+
+test-linque: caminho-base
+	@gcc -g3 -O0 -I$(LIB_UTILS_HEADERS) -Ilib/include -Wall -pedantic \
 					-D__unit_tests__ -D__debug__ \
 			-c -o ./build/linque-test.o ./src/linque.c 
-	gcc -I$(LIB_UTILS_HEADERS) -o ./bin/tests/ut-linque build/linque-test.o \
-		 -L$(LIB_UTILS_ST_BINS) -lcolecoes -lvisualiza -lteste -lm
+	@echo "Objeto 'linque-test.o' criado em 'build'."
+	gcc -Ilib/include -I$(LIB_UTILS_HEADERS) \
+		 -o ./bin/tests/ut-linque build/linque-test.o \
+		 -L$(LIB_UTILS_ST_BINS) -lcolecoes -lvisualiza -lteste -lm \
+		 -L./lib/ -lcaminhobase
 
 test-menu:
 	@gcc -I$(LIB_UTILS_HEADERS) -D__unit_tests__ -D__debug__ \
@@ -196,8 +202,8 @@ cmd-frequencia-release: cria-raiz-programas
 	@echo "Lincados num binário chamado 'cmd-frequencia'."
 
 caminho-base:
-	@rustc --out-dir=lib/ --crate-type cdylib --crate-name caminhobase \
-			 pacotes-externos/src/linque.rs
+	@rustc --out-dir=lib/ --crate-type=cdylib --crate-name=caminhobase \
+			 pacotes-externos/src/linque.rs -C strip=debuginfo -C opt-level=3
 	@echo "Biblioteca dinâmica 'libcaminhobase' gerada em 'lib'."
 #=== === === === === === === === === === === === === === === ==== == === ===
 debug:
