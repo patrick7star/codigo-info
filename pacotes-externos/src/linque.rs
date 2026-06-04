@@ -83,30 +83,56 @@ fn retira_a_base(base: &str) -> Option<PathBuf>
    Some(absoluto)
 }
 
+fn path_to_rawstr(caminho: &Path) -> *mut c_char
+{
+/* Transforma de um caminho nativo de Rust para uma raw-string pro C. */
+   match caminho.to_str() 
+   {
+      Some(caminhostr) => {
+         let copia = caminhostr.to_string();
+
+         CString::new(copia).unwrap().into_raw()
+      } None =>
+         { std::ptr::null_mut::<c_char>() }
+   }
+}
+#[repr(C)]
+pub struct CaminhoRust { data: *mut c_char, desalocado: bool }
+
 /** Isso está sendo feito aqui, já aproveitando a função que faz algo similar.
  * Também porque o Rust tem um bom manipulador de caminhos, diferente do C,
  * quen não possui nada na biblioteca padrão. */
+#[no_mangle]
 pub extern "C" fn computa_caminho_externo(pathname: *mut c_char) 
-  -> *mut c_char
+  -> CaminhoRust
 {
-   let output = match retira_a_base("codigo-info") {
+   const NULO: *mut c_char = std::ptr::null_mut::<c_char>();
+   const INVALIDO: CaminhoRust = CaminhoRust { data: NULO, desalocado: true };
+   const BASE: &str = "codigo-info";
+   let output = match retira_a_base(BASE) {
       Some(path) => path,
       None =>
-         { return std::ptr::null_mut::<c_char>() }
+         { return INVALIDO; }
    };
    let complemento = unsafe { CString::from_raw(pathname) };
    // Converte novamente para string.
    let caminho_string = complemento.into_string().unwrap();
    let caminho = output.join(Path::new(&caminho_string));
-   /* Pipeline bem cuidada da transformação. É preciso levar ela de um PathBuf
-    * até uma CString, na verdade sua versão raw array. */
-   let caminho_oss = caminho.into_os_string();
-   let caminho_box_oss = caminho_oss.into_boxed_os_str();
-   let caminho_str = caminho_box_oss.to_str();
-   let output = CString::new(caminho_str.unwrap()).unwrap();
 
     // Retornando a CString como uma raw string.
-    output.into_raw() as *mut c_char 
+    CaminhoRust { data: path_to_rawstr(&caminho), desalocado: false }
+}
+
+pub extern "C" fn libera_caminho_rust(obj: *mut CaminhoRust)
+{
+   unsafe {
+      if !(*obj).desalocado { 
+         let _= CString::from_raw((*obj).data);  
+         (*obj).desalocado = true;
+
+         println!("CaminhoRust liberado.");
+      }
+   }
 }
 
 fn cria_linques_no_repositorio(nome_do_linque: &str) -> io::Result<PathBuf> 
@@ -174,7 +200,8 @@ fn cria_linques_locais(nome_do_linque: &str) -> io::Result<PathBuf>
 
 #[cfg(test)]
 mod tests {
-   use super::{CString, c_char};
+   use super::{CString, c_char, CaminhoRust, libera_caminho_rust};
+   use std::mem::{transmute};
 
    #[test]
    fn visualizando_o_computa_caminho()
@@ -205,10 +232,11 @@ mod tests {
    {
       let a = "data/info/saldo.txt";
       let b = CString::new(a).unwrap();
-      let c: *mut c_char;
+      let c = super::computa_caminho_externo(b.into_raw());
+      let r = unsafe { transmute::<&CaminhoRust, *mut CaminhoRust>(&c)};
 
-      c = super::computa_caminho_externo(b.into_raw());
-
-      imprime_um_caminho_em_c(c);
+      print!("Caminho criado: ");
+      imprime_um_caminho_em_c(c.data);
+      libera_caminho_rust(r);
    }
 }
