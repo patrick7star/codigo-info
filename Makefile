@@ -202,7 +202,7 @@ cmd-frequencia-release: cria-raiz-programas
 	@echo "Lincados num binário chamado 'cmd-frequencia'."
 
 caminho-base:
-	@rustc --out-dir=lib/ --crate-type=cdylib --crate-name=caminhobase \
+	@rustc -g --out-dir=lib/ --crate-type=cdylib --crate-name=caminhobase \
 			 pacotes-externos/src/linque.rs -C strip=debuginfo -C opt-level=3
 	@echo "Biblioteca dinâmica 'libcaminhobase' gerada em 'lib'."
 #=== === === === === === === === === === === === === === === ==== == === ===
