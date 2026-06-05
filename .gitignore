@@ -2,5 +2,6 @@ bin/
 build/
 lib/include/
 lib/*.a
+lib/*.so
 target/
 Cargo.lock
