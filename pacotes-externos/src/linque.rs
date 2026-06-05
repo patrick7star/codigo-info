@@ -10,6 +10,7 @@ use std::path::{PathBuf, Path, Component};
 use std::env::{var, VarError};
 use std::io;
 use std::alloc::{alloc, Layout};
+use std::ptr::{null_mut, write_bytes};
 
 // Nome do programa aqui.
 const NOME_DO_PROGRAMA: &'static str = "cargo-listagem.exe";
@@ -118,6 +119,7 @@ fn clone_rawstr(string: *const c_char) -> *mut c_char
    let src: *const u8 = string as *const u8;
 
    buffer = unsafe { alloc(layout.unwrap()) };
+   unsafe { write_bytes(buffer, 0x00, MAX); }
    unsafe { buffer.copy_from(src, length) }
    buffer as *mut c_char
 }
@@ -140,7 +142,7 @@ fn rawstr_to_string(string: *const c_char) -> String
 #[no_mangle]
 pub extern "C" fn computa_caminho_externo(pathname: *mut c_char) -> *mut i8
 {
-   const NULO: *mut c_char = std::ptr::null_mut::<c_char>();
+   const NULO: *mut c_char = null_mut::<c_char>();
    const BASE: &str = "codigo-info";
    let output = match retira_a_base(BASE) {
       Some(path) => path,
@@ -154,12 +156,14 @@ pub extern "C" fn computa_caminho_externo(pathname: *mut c_char) -> *mut i8
     path_to_rawstr(caminho)
 }
 
-pub extern "C" fn libera_caminho_externo(obj: *mut c_char)
+#[no_mangle]
+pub extern "C" fn libera_caminho_externo(objeto: *mut c_char)
 {
    unsafe {
-      if obj != std::ptr::null_mut::<c_char>()
-         { let _= CString::from_raw(obj);  }
-      println!("CaminhoRust liberado.");
+      if objeto != null_mut::<c_char>()
+         { let _= CString::from_raw(objeto);  }
+      if cfg!(debug_assertions)
+         { println!("CaminhoRust liberado.");}
    }
 }
 

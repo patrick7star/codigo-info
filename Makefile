@@ -5,7 +5,7 @@ all: debug otimizado
 VERSOES_DIR = $(CCODES)/versions
 VERSAO = v0.3.0
 CONTEUDO = lib/ src/ makefile
-NOME = codigo-info
+NOME = codigo-info-release
 CAMINHO = $(VERSOES_DIR)/$(NOME).$(VERSAO)
 
 # Tal biblioteca apenas funciona na máquina do desenvolvedor do projeto.
@@ -109,10 +109,11 @@ test-linque: caminho-base
 					-D__unit_tests__ -D__debug__ \
 			-c -o ./build/linque-test.o ./src/linque.c 
 	@echo "Objeto 'linque-test.o' criado em 'build'."
-	gcc -Ilib/include -I$(LIB_UTILS_HEADERS) \
+	@gcc -I./lib/include -I$(LIB_UTILS_HEADERS) \
 		 -o ./bin/tests/ut-linque build/linque-test.o \
 		 -L$(LIB_UTILS_ST_BINS) -lcolecoes -lvisualiza -lteste -lm \
 		 -L./lib/ -lcaminhobase
+	@echo "Teste 'ut-linque' compilado."
 
 test-menu:
 	@gcc -I$(LIB_UTILS_HEADERS) -D__unit_tests__ -D__debug__ \
@@ -202,12 +203,18 @@ cmd-frequencia-release: cria-raiz-programas
 	@echo "Lincados num binário chamado 'cmd-frequencia'."
 
 caminho-base:
-	@rustc -g --out-dir=lib/ --crate-type=cdylib --crate-name=caminhobase \
+	@rustc --out-dir=lib/ --crate-type=staticlib --crate-name=caminhobase \
 			 pacotes-externos/src/linque.rs -C strip=debuginfo -C opt-level=3
-	@echo "Biblioteca dinâmica 'libcaminhobase' gerada em 'lib'."
+	@echo "Biblioteca estática 'libcaminhobase' gerada em 'lib'."
+
+caminho-base-debug:
+	@rustc -g --crate-type=staticlib --crate-name=caminhobase \
+			 --out-dir=./build  pacotes-externos/src/linque.rs
+	@echo "Biblioteca estática[debug] 'libcaminhobase.a' gerada em 'build'."
+
 #=== === === === === === === === === === === === === === === ==== == === ===
-debug:
-	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic \
+debug: caminho-base-debug
+	@sdf%gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic \
 		-c -o build/variaveis_de_ambiente-debug.o src/variaveis_de_ambiente.c
 	@echo "Compilado objeto 'variaveis_de_ambiente-debug'."
 	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic -D__debug__ \
@@ -219,7 +226,8 @@ debug:
 	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic -D__debug__ \
 		-c -o build/classificacao-debug.o src/classificacao.c -Wno-pedantic
 	@echo "Compilado objeto 'classificação-debug'."
-	@gcc -I$(LIB_UTILS_HEADERS) -D__debug__ -g3 -O0 -Wall -pedantic \
+	@gcc -I$(LIB_UTILS_HEADERS) -I./lib/include -D__debug__ -g3 -O0 \
+		  -Wall -pedantic \
 		-c -o build/linque-debug.o src/linque.c 
 	@echo "Compilado objeto 'linque-debug'."
 	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -D__unit_tests__ -D__debug__ \
@@ -229,38 +237,43 @@ debug:
 	@$(CLANG) -O0 -g3 -D__debug__ -Wall \
 		-c -o build/funcionalidades-debug.o src/funcionalidades.c
 	@echo "Compilado objeto do 'funcionalidades-debug'."
-	@gcc -I$(LIB_UTILS_HEADERS) -D__debug__ \
+	@gcc -I$(LIB_UTILS_HEADERS) -I./lib/include -D__debug__ \
 		-o ./bin/$(NOME)-debug \
 			build/main-debug.o build/classificacao-debug.o \
 			build/variaveis_de_ambiente-debug.o build/filtro-debug.o \
 			build/menu-debug.o build/linque-debug.o \
 			build/funcionalidades-debug.o \
 		-L$(LIB_UTILS_ST_BINS) \
-			-lcolecoes -lcomputa -lvisualiza -lm -lterminal
+			-lcolecoes -lcomputa -lvisualiza -lm -lterminal \
+		-L./build -lcaminhobase
 	@echo "Lincando ambos objetos, também verifica algum 'bad coding'."
 
-release: obj-linque obj-menu pacotes-externos-release cmd-frequencia-release
-	@gcc -I./lib/include -O3 -Wall -pedantic -Wextra \
-		-c -o build/variaveis_de_ambiente.o src/variaveis_de_ambiente.c \
-		-L./lib -lestringue
+release: pacotes-externos-release cmd-frequencia-release caminho-base \
+			obj-linque obj-menu 
+	@gcc -I$(LOCAL_UTILS_HEADERS) -O3 -Wall -pedantic -Wextra \
+		-c -o build/variaveis_de_ambiente.o src/variaveis_de_ambiente.c
 	@echo "Compilado objeto 'variaveis_de_ambiente'."
-	@gcc -I./lib/include -O3 -Wall -Wextra -pedantic -D__release__ \
+	@gcc -I$(LOCAL_UTILS_HEADERS) -O3 -Wall -Wextra -pedantic -D__release__ \
 		-Wno-unused-function -Wno-main \
 		-c -o ./build/main.o ./src/main.c 
 	@echo "Compilado objeto do 'main'."
-	@$(CLANG) -I$(LIB_UTILS_HEADERS) -O3 -Oz -Wall -pedantic -Wextra \
+	@$(CLANG) -I$(LOCAL_UTILS_HEADERS) -O3 -Oz -Wall -pedantic -Wextra \
 		-c -o build/funcionalidades.o src/funcionalidades.c 
 	@gcc -I./lib/include -O3 -Oz -Wall -pedantic -Wextra \
 		-c -o build/classificacao.o src/classificacao.c
 	@echo "Compilado objeto do 'classificacao'."
-	@gcc -I./lib/include -O3 -Oz -Wall -pedantic -Wextra \
+	@gcc -I$(LOCAL_UTILS_HEADERS) -O3 -Oz -Wall -pedantic -Wextra \
 		-c -o build/filtro.o src/filtro.c 
 	@echo "Compilado objeto do 'filtro'."
+	@$(CC) -I$(LOCAL_UTILS_HEADERS) -O3 -Oz -Wall -pedantic -Wextra \
+		-c -o build/linque.o src/linque.c 
+	@echo "Compilado objeto do 'linque'."
 	@gcc -I$(LOCAL_UTILS_HEADERS) -D__release__ \
 		-o./bin/$(NOME) \
 			build/main.o build/variaveis_de_ambiente.o \
 			build/menu.o build/classificacao.o build/filtro.o \
 			build/linque.o build/funcionalidades.o \
-		-L$(LOCAL_UTILS_BINS) -lcolecoes -lvisualiza -lcomputa -lm -lbasico
+		-L$(LOCAL_UTILS_BINS) -lcolecoes -lvisualiza -lcomputa -lbasico \
+									 -lcaminhobase -lm
 	@echo "Lincando ambos objetos, então, compilando binário."
 	@echo "Todo o programa foi compilado com sucesso."

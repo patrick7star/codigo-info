@@ -24,11 +24,11 @@
 #include "impressao.h"
 #include "conjunto_ref.h"
 #include "macros.h"
+#include "caminho-base.h"
 
 // Caractéres Unicode de representão itens a serem listados.
 const wchar_t VALIDO   = L'\U0001f7e2';
 const wchar_t INVALIDO = L'\u2b55';
-const char* PATH_ORDEMDE = "/home/dee_dee_dexter/programas/codigo-info/data/ordem-de.dat";
 
 /* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
  *                         Interface Privada
@@ -108,11 +108,16 @@ const char* ordemdirent_to_str(OrdemDirEnt tipo_de_ordem)
    }
 }
 
+char* caminho_ordemde(void)
+// Acha caminho do banco de dados de forma dinâmica.
+   { return computa_caminho_externo("data/ordem-de.dat"); }
+
 void salva_ode(OrdemDirEnt tipo)
 {
    FILE* stream = NULL;
    const int size = sizeof(int);
    int result;
+   char* PATH_ORDEMDE = caminho_ordemde();
 
    stream = fopen(PATH_ORDEMDE, "wb");
    result = fwrite(&tipo, size, 1, stream);
@@ -136,6 +141,8 @@ void salva_ode(OrdemDirEnt tipo)
       #else
       pass();
       #endif
+   else
+      libera_caminho_externo(PATH_ORDEMDE);
 }
 void info_sobre_repositorio_de_linques(void) {
 /* Lista todas entradas do diretório que representa o repositório de linques,
@@ -759,9 +766,11 @@ static OrdemDirEnt carrega_ode(void)
    const int size = sizeof(buffer);
    FILE* database = NULL;
    int result;
+   char* PATH_ORDEMDE = caminho_ordemde();
 
    #ifdef __debug__
    printf("OrdemDirEnt %d bytes\n", size);
+   printf("Caminho do database(ODE): '%s'\n", PATH_ORDEMDE);
    #endif
    database = fopen(PATH_ORDEMDE, "rb");
 
@@ -780,8 +789,11 @@ static OrdemDirEnt carrega_ode(void)
       #else
       pass();
       #endif
-   else
+   else {
+      libera_caminho_externo(PATH_ORDEMDE);
       return Nenhuma;
+   }
+   libera_caminho_externo(PATH_ORDEMDE);
    return buffer;
 }
 
@@ -794,7 +806,6 @@ static OrdemDirEnt carrega_ode(void)
 #include <errno.h>
 #include <time.h>
 #include <math.h>
-#include "caminho-base.h"
 
 OrdemDirEnt random_ode(void);
 TESTE nova_visualizacao_com_ordenacao(void);
@@ -807,17 +818,7 @@ TESTE byte_aleatorio(void);
 TESTE sorteio_de_ordenacoes(void);
 TESTE sorteio_e_registro_de_ordenacoes(void);
 TESTE escolha_da_funcao_certa_pela_ordem(void);
-
-TESTE caminho_ordemde_dinamico(void) {
-   char* input = "data/ordem-de.txt", *output = NULL; 
-
-   printf("Antes do processo de FFI....");
-   fflush(stdout);
-   output = computa_caminho_externo(input);
-   puts("feito.");
-   printf("Criado ==> '%s'.\n", output);
-}
-
+TESTE caminho_ordemde_dinamico(void); 
 
 int main(void) {
    setlocale(LC_ALL, "en_US.UTF-8");
@@ -838,6 +839,19 @@ int main(void) {
          Unit(nova_visualizacao_com_ordenacao, false)
    );
    return EXIT_SUCCESS;
+}
+
+TESTE caminho_ordemde_dinamico(void) {
+   char* input = "data/ordem-de.txt", *output = NULL; 
+
+   printf("Antes do processo de FFI....");
+   fflush(stdout);
+
+   output = computa_caminho_externo(input);
+
+   puts("feito.");
+   printf("Criado ==> '%s'.\n", output);
+   libera_caminho_externo(output);
 }
 
 TESTE nova_visualizacao_com_ordenacao(void)
