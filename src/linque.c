@@ -794,6 +794,7 @@ static OrdemDirEnt carrega_ode(void)
 #include <errno.h>
 #include <time.h>
 #include <math.h>
+#include "caminho-base.h"
 
 OrdemDirEnt random_ode(void);
 TESTE nova_visualizacao_com_ordenacao(void);
@@ -807,12 +808,23 @@ TESTE sorteio_de_ordenacoes(void);
 TESTE sorteio_e_registro_de_ordenacoes(void);
 TESTE escolha_da_funcao_certa_pela_ordem(void);
 
+TESTE caminho_ordemde_dinamico(void) {
+   char* input = "data/ordem-de.txt", *output = NULL; 
+
+   printf("Antes do processo de FFI....");
+   fflush(stdout);
+   output = computa_caminho_externo(input);
+   puts("feito.");
+   printf("Criado ==> '%s'.\n", output);
+}
+
 
 int main(void) {
    setlocale(LC_ALL, "en_US.UTF-8");
 
    executa_testes_b(
-      true, 10,
+      true, 11,
+         Unit(caminho_ordemde_dinamico, true),
          Unit(escolha_da_funcao_certa_pela_ordem, false),
          Unit(sorteio_e_registro_de_ordenacoes, false),
          Unit(sorteio_de_ordenacoes, false),

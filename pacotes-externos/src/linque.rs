@@ -9,6 +9,7 @@ use std::ffi::{OsStr, c_char, CString};
 use std::path::{PathBuf, Path, Component};
 use std::env::{var, VarError};
 use std::io;
+use std::alloc::{alloc, Layout};
 
 // Nome do programa aqui.
 const NOME_DO_PROGRAMA: &'static str = "cargo-listagem.exe";
@@ -83,55 +84,82 @@ fn retira_a_base(base: &str) -> Option<PathBuf>
    Some(absoluto)
 }
 
-fn path_to_rawstr(caminho: &Path) -> *mut c_char
+fn path_to_rawstr(caminho: PathBuf) -> *mut c_char
 {
 /* Transforma de um caminho nativo de Rust para uma raw-string pro C. */
-   match caminho.to_str() 
-   {
-      Some(caminhostr) => {
-         let copia = caminhostr.to_string();
-
-         CString::new(copia).unwrap().into_raw()
-      } None =>
-         { std::ptr::null_mut::<c_char>() }
-   }
+   let cstring: CString;
+   let mut string = format!("{:?}", caminho);
+   
+   // string = string.replace('\"', "");
+   string = string.trim_end_matches('\"')
+            .trim_start_matches('\"').to_string();
+   cstring = CString::new(string).unwrap();
+   cstring.into_raw()
 }
-#[repr(C)]
-pub struct CaminhoRust { data: *mut c_char, desalocado: bool }
+
+fn strlen(string: *const c_char) -> usize
+{
+   let mut cursor = 0;
+
+   while unsafe { *(string.offset(cursor)) != 0x00 }
+      { cursor += 1; }
+
+   cursor as usize
+}
+
+fn clone_rawstr(string: *const c_char) -> *mut c_char
+{
+   type Char = c_char;
+
+   const MAX: usize = 1500;
+   let buffer: *mut u8; 
+   let layout = Layout::array::<Char>(MAX);
+   let length = strlen(string);
+   let src: *const u8 = string as *const u8;
+
+   buffer = unsafe { alloc(layout.unwrap()) };
+   unsafe { buffer.copy_from(src, length) }
+   buffer as *mut c_char
+}
+
+fn rawstr_to_string(string: *const c_char) -> String
+{
+   /* Realiza a clonagem da raw-string, assim CString pode tomar sua 
+    * propriedade(consumila). */
+   let copia = clone_rawstr(string);
+   /* Memória alocada pela clonagem é consumida por este método de
+    * transformação em numa c-string em Rust. */
+   let input = unsafe { CString::from_raw(copia) };
+
+   input.into_string().unwrap() 
+}
 
 /** Isso está sendo feito aqui, já aproveitando a função que faz algo similar.
  * Também porque o Rust tem um bom manipulador de caminhos, diferente do C,
  * quen não possui nada na biblioteca padrão. */
 #[no_mangle]
-pub extern "C" fn computa_caminho_externo(pathname: *mut c_char) 
-  -> CaminhoRust
+pub extern "C" fn computa_caminho_externo(pathname: *mut c_char) -> *mut i8
 {
    const NULO: *mut c_char = std::ptr::null_mut::<c_char>();
-   const INVALIDO: CaminhoRust = CaminhoRust { data: NULO, desalocado: true };
    const BASE: &str = "codigo-info";
    let output = match retira_a_base(BASE) {
       Some(path) => path,
       None =>
-         { return INVALIDO; }
+         { return NULO; }
    };
-   let complemento = unsafe { CString::from_raw(pathname) };
-   // Converte novamente para string.
-   let caminho_string = complemento.into_string().unwrap();
-   let caminho = output.join(Path::new(&caminho_string));
+   let complemento = rawstr_to_string(pathname);
+   let caminho = output.join(Path::new(&complemento));
 
     // Retornando a CString como uma raw string.
-    CaminhoRust { data: path_to_rawstr(&caminho), desalocado: false }
+    path_to_rawstr(caminho)
 }
 
-pub extern "C" fn libera_caminho_rust(obj: *mut CaminhoRust)
+pub extern "C" fn libera_caminho_externo(obj: *mut c_char)
 {
    unsafe {
-      if !(*obj).desalocado { 
-         let _= CString::from_raw((*obj).data);  
-         (*obj).desalocado = true;
-
-         println!("CaminhoRust liberado.");
-      }
+      if obj != std::ptr::null_mut::<c_char>()
+         { let _= CString::from_raw(obj);  }
+      println!("CaminhoRust liberado.");
    }
 }
 
@@ -200,16 +228,16 @@ fn cria_linques_locais(nome_do_linque: &str) -> io::Result<PathBuf>
 
 #[cfg(test)]
 mod tests {
-   use super::{CString, c_char, CaminhoRust, libera_caminho_rust};
-   use std::mem::{transmute};
+   use super::{CString, c_char, libera_caminho_externo};
 
    #[test]
    fn visualizando_o_computa_caminho()
    {
-      println!("{:?}", super::computa_caminho("nova_pasta"));
+      let resultado = super::computa_caminho("nova-pasta");
+      println!("Caminho\n\t===> '{:?}'", resultado);
    }
 
-   fn imprime_um_caminho_em_c(pathname: *const c_char)
+   fn imprime_um_caminho_em_cstr(pathname: *const c_char)
    {
       let mut cursor: isize = 0;
 
@@ -233,10 +261,9 @@ mod tests {
       let a = "data/info/saldo.txt";
       let b = CString::new(a).unwrap();
       let c = super::computa_caminho_externo(b.into_raw());
-      let r = unsafe { transmute::<&CaminhoRust, *mut CaminhoRust>(&c)};
 
       print!("Caminho criado: ");
-      imprime_um_caminho_em_c(c.data);
-      libera_caminho_rust(r);
+      imprime_um_caminho_em_cstr(c);
+      libera_caminho_externo(c);
    }
 }
