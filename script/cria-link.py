@@ -8,20 +8,25 @@
 from os import (getenv, environ as EnvironVars)
 from pathlib import (Path)
 
-IDENTIFICADOR = "LINKS"
 if __debug__:
    print("\nRodando no modo DEBUG", end='\n\n')
    NOME = "codigo-info-debug"
-   EXECUTAVEL = Path("./bin/codigo-info-debug").resolve()
 else:
-   NOME = "codigo-info"
-   EXECUTAVEL = Path("./bin/codigo-info").resolve()
+   NOME = "codigo-info-release"
+IDENTIFICADOR = "LINKS"
+# Caminho ao executável em relação ao projeto.
+EXECUTAVEL = Path("./bin/%s" % NOME).resolve()
 
 
 def cria_caminho_do_linque() -> Path:
    "Retorna caminho onde o linque será criado, como o NOME."
    caminho = Path(getenv(IDENTIFICADOR))
-   caminho = caminho.joinpath(NOME)
+   NOME_ESPECIAL = "codigo-info"
+
+   if __debug__:
+      caminho = caminho.joinpath(NOME)
+   else:
+      caminho = caminho.joinpath(NOME_ESPECIAL)
 
    return caminho
 
@@ -40,8 +45,6 @@ def verificacao_basica() -> None:
 def cria_linques() -> None:
    caminho = cria_caminho_do_linque()
 
-   #assert (not caminho.exists(follow_symlinks=False))
-
    try:
       caminho.symlink_to(EXECUTAVEL)
    except FileExistsError:
@@ -53,5 +56,6 @@ def cria_linques() -> None:
       print("Linque criado com sucesso.")
 
 
+print("Repositório dos linques: '{}'".format(getenv("LINKS")))
 verificacao_basica()
 cria_linques()
