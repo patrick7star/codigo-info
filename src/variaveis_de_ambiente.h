@@ -6,5 +6,6 @@
 
  ListaStrings filtra_caminhos_de_path(void);
  void mostra_conteudo_da_variavel_path(void);
+ void mostra_conteudo_da_variavel_path_organizado(void);
 
 #endif

@@ -185,7 +185,8 @@ extern void menu_interface_do_programa_i(char* args[], int total)
          folha_de_ajuda();
          break;
       case 'P':
-         mostra_conteudo_da_variavel_path();
+         // mostra_conteudo_da_variavel_path();
+         mostra_conteudo_da_variavel_path_organizado();
          break;
       case 'e':
          #ifdef __debug__

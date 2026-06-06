@@ -5,7 +5,7 @@ all: debug otimizado
 VERSOES_DIR = $(CCODES)/versions
 VERSAO = v0.3.0
 CONTEUDO = lib/ src/ makefile
-NOME = codigo-info-release
+NOME = codigo-info
 CAMINHO = $(VERSOES_DIR)/$(NOME).$(VERSAO)
 
 # Tal biblioteca apenas funciona na máquina do desenvolvedor do projeto.
@@ -214,7 +214,7 @@ caminho-base-debug:
 
 #=== === === === === === === === === === === === === === === ==== == === ===
 debug: caminho-base-debug
-	@sdf%gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic \
+	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic \
 		-c -o build/variaveis_de_ambiente-debug.o src/variaveis_de_ambiente.c
 	@echo "Compilado objeto 'variaveis_de_ambiente-debug'."
 	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic -D__debug__ \
@@ -269,7 +269,7 @@ release: pacotes-externos-release cmd-frequencia-release caminho-base \
 		-c -o build/linque.o src/linque.c 
 	@echo "Compilado objeto do 'linque'."
 	@gcc -I$(LOCAL_UTILS_HEADERS) -D__release__ \
-		-o./bin/$(NOME) \
+		-o./bin/$(NOME)-release \
 			build/main.o build/variaveis_de_ambiente.o \
 			build/menu.o build/classificacao.o build/filtro.o \
 			build/linque.o build/funcionalidades.o \
