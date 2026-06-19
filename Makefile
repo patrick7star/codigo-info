@@ -9,7 +9,8 @@ NOME = codigo-info
 CAMINHO = $(VERSOES_DIR)/$(NOME).$(VERSAO)
 
 # Tal biblioteca apenas funciona na máquina do desenvolvedor do projeto.
-BASE = $(UNIX_CODES)
+#BASE = $(UNIX_CODES)			No WSL do Windows.
+BASE = $(C_CODES)
 LIB_UTILS_HEADERS  = $(BASE)/utilitarios-em-c/include
 LIB_UTILS_DYN_BINS = $(BASE)/utilitarios-em-c/bin/shared
 LIB_UTILS_ST_BINS  = $(BASE)/utilitarios-em-c/bin/static
@@ -17,7 +18,7 @@ LIB_UTILS_ST_BINS  = $(BASE)/utilitarios-em-c/bin/static
 LOCAL_UTILS_HEADERS	= ./lib/include
 LOCAL_UTILS_BINS		= ./lib/
 # Compiladores utilizados:
-CLANGCPP = g++
+CLANGCPP = clang++
 CARGO		= cargo
 CLANG		= gcc
 
@@ -26,11 +27,15 @@ salva:
 
 clean:
 	@echo "removendo 'build'(construturos) e 'bin'(executaveis)..."
-	rm -rv bin/ build/
+	rm -frv bin/ build/ lib/*.a lib/*.rlib lib/*.so lib/include/
 
 backups:
 	@echo -e "\nvisualizar todos backups deste projeto:"
 	@ls --sort=time -1 ../versions/codigo-info*.tar
+
+extrai-lib:
+	tar -xf lib/utils-linux-x86_64.tar
+	@echo "Biblioteca local para máquina x86_64 foi extraida com sucesso."
 
 
 # Apenas funciona na máquina do desenvolvedor do projeto. Você obviamente
@@ -38,13 +43,13 @@ backups:
 importa-biblioteca-externas:
 	@mkdir -p lib/include
 	@echo "Criado diretórios 'lib' e subdiretórios 'include'."
-	@cp -uv	$(LIB_UTILS_ST_BINS)/libteste.a				\
+	@cp -fuv	$(LIB_UTILS_ST_BINS)/libteste.a				\
 				$(LIB_UTILS_ST_BINS)/libterminal.a			\
 				$(LIB_UTILS_ST_BINS)/libvisualiza.a			\
 				$(LIB_UTILS_ST_BINS)/libcomputa.a			\
 				$(LIB_UTILS_ST_BINS)/libcolecoes.a			\
 				./lib/
-	@cp -uv	$(LIB_UTILS_HEADERS)/legivel.h						\
+	@cp -fuv	$(LIB_UTILS_HEADERS)/legivel.h						\
 				$(LIB_UTILS_HEADERS)/hashtable_ref.h				\
 				$(LIB_UTILS_HEADERS)/memoria.h						\
 				$(LIB_UTILS_HEADERS)/listaarray_ref.h				\
@@ -59,6 +64,7 @@ importa-biblioteca-externas:
 				$(LIB_UTILS_HEADERS)/conjunto_ref.h					\
 				./lib/include
 	@echo "As bibliotecas estáticas liblegivel, libhtref, libmemoria, liblaref e libestringue foram copiadas com sucesso."
+	@tar -xf lib/utils-linux-x86_64.tar ./lib/include/caminho-base.h
 
 #=== === === === === === === === === === === === === === === ==== == === ==
 DEBUG_FLAGS = -D_MODO_DEBUG \
@@ -77,11 +83,6 @@ unit-tests: cria-diretorios
 		 -Ofast -Wall \
 		 -o bin/unit-tests src/main.c \
 		 -Llib -lvisualiza -llegivel
-
-	
-#=== === === === === === === === === === === === === === === ==== == === ===
-HEADERS_RLS = ./lib/include
-LIB_RLS		= ./lib
 
 
 #=== === === === === === === === === === === === === === === ==== == === ==
@@ -184,11 +185,12 @@ pacotes-externos-release: cria-raiz-programas
 	@echo "Hard linque ligando binário criado."
 
 cmd-frequencia-release: cria-raiz-programas
-	@$(CLANGCPP) -O3 -c -o \
+	@$(CLANGCPP) -I$(LIB_UTILS_HEADERS) -O3 -c -o \
 		build/cmd-frequencia/main.o cmd-frequencia/src/main.cpp
 	@echo "Objeto 'main' compilado com sucesso."
-	@$(CLANGCPP) -std=c++17 -O3 -c -I$(LIB_UTILS_HEADERS) -o \
-		build/cmd-frequencia/lincagem.o cmd-frequencia/src/lincagem.cpp
+	$(CLANGCPP) -std=c++17 -O3 -I$(LIB_UTILS_HEADERS) -c -o \
+					 build/cmd-frequencia/lincagem.o 
+					 cmd-frequencia/src/lincagem.cpp
 	@echo "Objeto 'lincagem' compilado com sucesso."
 	@$(CLANGCPP) -std=c++17 -O3 -I$(LIB_UTILS_HEADERS) \
 		-c -o build/cmd-frequencia/extracao-comando.o \
@@ -214,37 +216,37 @@ caminho-base-debug:
 
 #=== === === === === === === === === === === === === === === ==== == === ===
 debug: caminho-base-debug
-	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic \
+	@$(CLANG) -I$(LOCAL_UTILS_HEADERS) -g3 -O0 -Wall -pedantic \
 		-c -o build/variaveis_de_ambiente-debug.o src/variaveis_de_ambiente.c
 	@echo "Compilado objeto 'variaveis_de_ambiente-debug'."
-	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic -D__debug__ \
+	@$(CLANG) -I$(LOCAL_UTILS_HEADERS) -g3 -O0 -Wall -pedantic -D__debug__ \
 		-c -o build/filtro-debug.o src/filtro.c 
 	@echo "Compilado objeto 'filtro-debug'."
-	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic -D__debug__ \
+	@$(CLANG) -I$(LOCAL_UTILS_HEADERS) -g3 -O0 -Wall -pedantic -D__debug__ \
 		-c -o build/menu-debug.o src/menu.c 
 	@echo "Compilado objeto 'menu-debug'."
-	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -Wall -pedantic -D__debug__ \
+	@$(CLANG) -I$(LOCAL_UTILS_HEADERS) -g3 -O0 -Wall -pedantic -D__debug__ \
 		-c -o build/classificacao-debug.o src/classificacao.c -Wno-pedantic
 	@echo "Compilado objeto 'classificação-debug'."
-	@gcc -I$(LIB_UTILS_HEADERS) -I./lib/include -D__debug__ -g3 -O0 \
+	@$(CLANG) -I$(LOCAL_UTILS_HEADERS) -D__debug__ -g3 -O0 \
 		  -Wall -pedantic \
 		-c -o build/linque-debug.o src/linque.c 
 	@echo "Compilado objeto 'linque-debug'."
-	@gcc -I$(LIB_UTILS_HEADERS) -g3 -O0 -D__unit_tests__ -D__debug__ \
+	@$(CLANG) -I$(LOCAL_UTILS_HEADERS) -g3 -O0 -D__unit_tests__ -D__debug__ \
 		-Wall -pedantic -Wno-unused-function -Wno-main \
 		-c -o ./build/main-debug.o ./src/main.c 
 	@echo "Compilado objeto do 'main-debug'."
 	@$(CLANG) -O0 -g3 -D__debug__ -Wall \
 		-c -o build/funcionalidades-debug.o src/funcionalidades.c
 	@echo "Compilado objeto do 'funcionalidades-debug'."
-	@gcc -I$(LIB_UTILS_HEADERS) -I./lib/include -D__debug__ \
+	$(CLANG) -I$(LOCAL_UTILS_HEADERS) -D__debug__ \
 		-o ./bin/$(NOME)-debug \
 			build/main-debug.o build/classificacao-debug.o \
 			build/variaveis_de_ambiente-debug.o build/filtro-debug.o \
 			build/menu-debug.o build/linque-debug.o \
 			build/funcionalidades-debug.o \
-		-L$(LIB_UTILS_ST_BINS) \
-			-lcolecoes -lcomputa -lvisualiza -lm -lterminal \
+		-L$(LOCAL_UTILS_BINS) \
+			-lcolecoes -lcomputa -lvisualiza -lteste -lm \
 		-L./build -lcaminhobase
 	@echo "Lincando ambos objetos, também verifica algum 'bad coding'."
 
