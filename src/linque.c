@@ -40,7 +40,6 @@ static const char* dtype_str(uint32_t code);
 static bool lincado_a_algo(char* caminho);
 static char* junta_caminhos(char* path_a, char* path_b);
 static bool pular_entradas_desnecessarias(struct dirent* obj);
-static void status_dos_linques_avaliados(int validos, int invalidos);
 static bool um_caminho_no_windows(const char* caminho);
 
 enum os_check { Failed = -1, Okay };
@@ -61,7 +60,7 @@ typedef const char* CStr;
 typedef struct dirent sDE;
 typedef size_t SizeT;
 
-static void  status_dos_linques_avaliados_i  (int v, int i, ODEnt o);
+static void  status_dos_linques_avaliados    (int v, int i, ODEnt o);
 static LDE   entradas_do_repositorio_linques (void);
 static void  free_lde                        (LDE obj);
 static void  ordena_entradas                 (LDE obj);
@@ -187,7 +186,7 @@ void info_sobre_repositorio_de_linques(void) {
          printf("\t\b\b%lc %s\n", status, nome);
       free(aux);
    }
-   status_dos_linques_avaliados(validos, invalidos);
+   status_dos_linques_avaliados(validos, invalidos, Normal);
 }
 
 void info_sobre_repositorio_de_linques_ordenada(void) {
@@ -242,7 +241,8 @@ void info_sobre_repositorio_de_linques_ordenada(void) {
          printf("\t\b\b%lc %s\n", status, nome);
       free(aux);
    }
-   status_dos_linques_avaliados_i(validos, invalidos, entries.ordem);
+
+   status_dos_linques_avaliados(validos, invalidos, entries.ordem);
    free_lde(entries);
 }
 
@@ -685,54 +685,76 @@ static bool pular_entradas_desnecessarias(struct dirent* obj) {
    return (strcmp(nome, CWD) == 0 || strcmp(nome, PARENT) == 0);
 }
 
-static void status_dos_linques_avaliados(int validos, int invalidos) {
+static void status_dos_linques_avaliados_sem_cor
+  (int validos, int invalidos, OrdemDirEnt ordem)
+{
+   const int N = 250;
    int total = validos + invalidos;
-   const int N = 150;
-   char validos_str[N], invalidos_str[N];
-   char* ptr_a = validos_str, *ptr_b = invalidos_str;
-   char total_str[N];
+   char validos_str[N], invalidos_str[N], total_str[N];
+   const char * ordemstr_out;
 
-   memset(validos_str, '\0', N);
-   memset(invalidos_str, '\0', N);
+   // Fortama componentes da grande formatação.
    sprintf(validos_str, "%2d", validos);
    sprintf(invalidos_str, "%2d", invalidos);
    sprintf(total_str, "%d", total);
 
-   ptr_a = colori_string_ii(ptr_a, Verde);
-   ptr_b = colori_string_ii(ptr_b, Vermelho);
-   aplica_formatacao_ii(total_str, AzulMarinho, Sublinhado);
+   ordemstr_out = (char*)ordemdirent_to_str(ordem);
 
    printf(
-      "\nForam contados %s linques; Balança geral: %s |%s.\n\n",
-      total_str, validos_str, invalidos_str
+     "\nForam contados %s linques; Balança geral: %s |%s; Ordenação[%s].\n\n",
+      total_str, validos_str, invalidos_str, ordemstr_out
    );
 }
 
-static void status_dos_linques_avaliados_i
+static void status_dos_linques_avaliados_colorido
   (int validos, int invalidos, OrdemDirEnt ordem)
 {
+   const int N = 250;
    int total = validos + invalidos;
-   const int N = 150;
-   char validos_str[N], invalidos_str[N], *ordem_str = NULL;
-   char total_str[N], *ptr_a = validos_str, *ptr_b = invalidos_str;
-   const char* ordemstr = ordemdirent_to_str(ordem);
+   char validos_str[N], invalidos_str[N], total_str[N];
+   char* ordemstr_in = NULL, * ordemstr_out = NULL,
+       * invalidos_str_out = NULL, *validos_str_out = NULL,
+       * total_str_out = NULL;
 
-   memset(validos_str, '\0', N);
-   memset(invalidos_str, '\0', N);
+   // Fortama componentes da grande formatação.
    sprintf(validos_str, "%2d", validos);
    sprintf(invalidos_str, "%2d", invalidos);
    sprintf(total_str, "%d", total);
 
-   ptr_a = colori_string_ii(ptr_a, Verde);
-   ptr_b = colori_string_ii(ptr_b, Vermelho);
-   aplica_formatacao_ii(total_str, AzulMarinho, Sublinhado);
-   ordem_str = colori_string((char*)ordemstr, Amarelo);
+   // Colori partes importantes.
+   validos_str_out = colori_string(validos_str, Verde);
+   invalidos_str_out = colori_string(invalidos_str, Vermelho);
+   total_str_out = aplica_formatacao(total_str, AzulMarinho, Sublinhado);
+   ordemstr_in = (char*)ordemdirent_to_str(ordem);
+   ordemstr_out = colori_string(ordemstr_in, Amarelo);
+   /*Nota: por algum motivo bem estranho só foi possível fazer o processo de
+           coloração usando as funções com alocação de memória no Linux
+           puro(não WLS), então foi substituido prá elas. 
+   */
 
    printf(
-      "\nForam contados %s linques; Balança geral: %s |%s; Ordenação[%s].\n\n",
-      total_str, validos_str, invalidos_str, ordem_str
+     "\nForam contados %s linques; Balança geral: %s |%s; Ordenação[%s].\n\n",
+      total_str_out, validos_str_out, invalidos_str_out, ordemstr_out
    );
-   free(ordem_str);
+   free(ordemstr_out);
+   free(validos_str_out);
+   free(invalidos_str_out);
+   free(total_str_out);
+}
+
+static void status_dos_linques_avaliados
+  (int validos, int invalidos, OrdemDirEnt ordem)
+{
+/* Realiza a apresentação baseado na variável de cores do terminal está 
+ * definida com o exato valor que deve(256color). 
+ */
+   const char* const MATCH = "xterm-256color;
+   char* valor_de_term = getenv("TERM");
+
+   if (strcmp(valor_de_term, MATCH) == Okay)
+      status_dos_linques_avaliados_colorido(validos, invalidos, ordem); 
+   else
+      status_dos_linques_avaliados_sem_cor(validos, invalidos, ordem); 
 }
 
 static SelecaoAlg selecao_do_algoritmo(OrdemDirEnt tipo_de_ordem)
