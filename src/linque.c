@@ -186,7 +186,7 @@ void info_sobre_repositorio_de_linques(void) {
          printf("\t\b\b%lc %s\n", status, nome);
       free(aux);
    }
-   status_dos_linques_avaliados(validos, invalidos, Normal);
+   status_dos_linques_avaliados(validos, invalidos, Nenhuma);
 }
 
 void info_sobre_repositorio_de_linques_ordenada(void) {
@@ -581,10 +581,17 @@ static bool um_caminho_no_windows(const char* caminho)
 /* Verifica se o caminho do linque passado rotea para uma aplicação armazenada
  * no sistema do Windows. */
    const char* const MATCH = "/mnt/c/";
-   int comprimento = strlen(caminho);
+   int comprimento = strlen(caminho), result;
    char buffer[comprimento];
 
-   readlink(caminho, buffer, comprimento);
+   // Compilador rígido quanto a isso, então colocando aqui.
+   result = readlink(caminho, buffer, comprimento);
+   // Aplicação irar parar se foi truncado o caminho lido.
+   if (result == Failed) {
+      perror(strerror(errno));
+      abort();
+   }
+
    return (strstr(buffer, MATCH) != NULL);
 }
 
@@ -748,7 +755,7 @@ static void status_dos_linques_avaliados
 /* Realiza a apresentação baseado na variável de cores do terminal está 
  * definida com o exato valor que deve(256color). 
  */
-   const char* const MATCH = "xterm-256color;
+   const char* const MATCH = "xterm-256color";
    char* valor_de_term = getenv("TERM");
 
    if (strcmp(valor_de_term, MATCH) == Okay)

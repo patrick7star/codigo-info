@@ -48,6 +48,7 @@ importa-biblioteca-externas:
 				$(LIB_UTILS_ST_BINS)/libvisualiza.a			\
 				$(LIB_UTILS_ST_BINS)/libcomputa.a			\
 				$(LIB_UTILS_ST_BINS)/libcolecoes.a			\
+				$(LIB_UTILS_ST_BINS)/libbasico.a				\
 				./lib/
 	@cp -fuv	$(LIB_UTILS_HEADERS)/legivel.h						\
 				$(LIB_UTILS_HEADERS)/hashtable_ref.h				\
@@ -188,8 +189,8 @@ cmd-frequencia-release: cria-raiz-programas
 	@$(CLANGCPP) -I$(LIB_UTILS_HEADERS) -O3 -c -o \
 		build/cmd-frequencia/main.o cmd-frequencia/src/main.cpp
 	@echo "Objeto 'main' compilado com sucesso."
-	$(CLANGCPP) -std=c++17 -O3 -I$(LIB_UTILS_HEADERS) -c -o \
-					 build/cmd-frequencia/lincagem.o 
+	@$(CLANGCPP) -std=c++17 -O3 -I$(LIB_UTILS_HEADERS) -c -o \
+					 build/cmd-frequencia/lincagem.o \
 					 cmd-frequencia/src/lincagem.cpp
 	@echo "Objeto 'lincagem' compilado com sucesso."
 	@$(CLANGCPP) -std=c++17 -O3 -I$(LIB_UTILS_HEADERS) \

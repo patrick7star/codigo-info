@@ -169,6 +169,9 @@ extern void menu_interface_do_programa_i(char* args[], int total)
    const char* const CURTAS = "hi:PL::Mte";
    const int Falhou = -1;
    int indice, result = getopt_long(total, args, CURTAS, LONGAS, &indice);
+   DirInfo agregado;
+   OrdemDirEnt estado;
+   const char* ordemstr;
 
    if (result == Falhou) return;
 
@@ -196,13 +199,10 @@ extern void menu_interface_do_programa_i(char* args[], int total)
          #endif
          break;
       case 'i':
-         DirInfo agregado = processa_projeto(optarg);
+         agregado = processa_projeto(optarg);
          visualiza_diretorio_info(&agregado);
          break;
       case 'L':
-         OrdemDirEnt estado;
-         const char* ordemstr;
-
          if (optarg != NULL)
          {
             estado = str_to_ode(optarg);
