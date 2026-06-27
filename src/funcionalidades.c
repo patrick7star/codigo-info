@@ -23,11 +23,8 @@ typedef Caminho const ConstPath;
  * Declarada aqui, pois é preciso que as funções públicas "sabiam" que as
  * funções que são chamadas existem.
  * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */
-static void junta_caminhos(Caminho a, ConstPath b);
-static Caminho caminho_base_do_programa(void);
 static Caminho caminho_cmd_frequencia(void);
 static Caminho caminho_pacotes_externos(void);
-static void free_caminho(Caminho In);
 
 /* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
  *                         Interface Pública
@@ -52,18 +49,15 @@ void pacotes_externos(void)
 
 void cmd_frequencia(const char* OPCAO)
 {
-   Caminho caminho;
-   const char* TERMINO = (char*)NULL;
-   int exitcode; 
+   Caminho caminho = caminho_cmd_frequencia();
 
-   caminho = caminho_cmd_frequencia();
    #ifdef __debug__
    printf("Caminho: '%s'\n", caminho);
    #endif
-   exitcode = execl(caminho, "cmd-frquencia", OPCAO, TERMINO);
 
-   if (exitcode == -1) {
-      puts("O programa falhou na execução.");
+   if (execl(caminho, "cmd-frquencia", OPCAO, NULL) == -1)
+   {
+      perror("O programa falhou na execução.");
       perror(strerror(errno));
       abort();
 
@@ -75,44 +69,6 @@ void cmd_frequencia(const char* OPCAO)
 /* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
  *                   Interface Privada Implementação
  * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */
-static void junta_caminhos(Caminho a, ConstPath b)
-{
-// Adiciona o caminho 'b' no caminho 'a'. Este último é modificado.
-   ConstPath SEP = "/";
-
-   strcat(a, SEP);
-   strcat(a, b);
-}
-
-static Caminho caminho_base_do_programa(void)
-{
-/* Retorna uma string com a base do programa, onde dali, é possível computar
- * todos os caminhos dos demais executáveis. Memória que será alocada é de
- * responsabilidade do chamador em destrui-la. Tal caminho é obitido baseado
- * na definição da variável de ambiente 'HOME', se ela não estiver
- * definida, o programa será interrompido. */
-   const int MAXIMO = 500, sz = sizeof(char);
-   Caminho output = NULL, caminho = NULL;
-   const char* VARIAVEL = "HOME";
-   ConstPath COMPLEMENTO = "programas/codigo-info";
-
-   output = calloc(MAXIMO, sz);
-   caminho = getenv(VARIAVEL);
-
-   if (strlen(caminho) > MAXIMO) {
-      perror("O caminho da variável excede o tamanho do buffer!");
-      abort();
-   } else if (caminho == NULL) {
-      perror("A variável não está definida!");
-      abort();
-   } else {
-      strcpy(output, caminho);
-      junta_caminhos(output, COMPLEMENTO);
-   }
-
-   return output;
-}
-
 static Caminho caminho_cmd_frequencia(void)
 {
 /* Retorna o caminho do executável dentro do diretório do projeto. Não é
@@ -125,11 +81,6 @@ static Caminho caminho_cmd_frequencia(void)
       "bin/programs/cmd-frequencia"
       #endif
    };
-   // Caminho output = caminho_base_do_programa();
-
-   // Juntando os caminhos ...
-   // junta_caminhos(output, RESTANTE);
-   // return output;
    return computa_caminho_externo(RESTANTE);
 }
 
@@ -145,22 +96,8 @@ static Caminho caminho_pacotes_externos(void)
       "bin/programs/pacotes-externos"
       #endif
    };
-   /*
-   Caminho output = caminho_base_do_programa();
-
-   #ifdef __debug__
-      printf("Restante: '%s'\n", RESTANTE);
-      printf("Base: '%s'\n", output);
-   #endif
-
-   // Juntando os caminhos ...
-   strcat(output, RESTANTE);
-   return output;*/
    return computa_caminho_externo(RESTANTE);
 }
-
-static void free_caminho(Caminho In)
-   { free(In); }
 
 /* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
  *                       Testes Unitários
@@ -168,11 +105,11 @@ static void free_caminho(Caminho In)
 #ifdef __unit_tests__
 #include "teste.h"
 
-TESTE obtendo_respectivos_caminhos(void);
 TESTE execucao_crua_do_pacotes_externos(void);
 TESTE execucao_do_cmd_frequencia_tendencia(void);
 TESTE execucao_do_cmd_frequencia_tudo(void);
 TESTE mexendo_com_chamada_execl(void);
+TESTE caminhos_de_ambos_executaveis(void);
 
 int main(int total, char* argumentos[])
 {
@@ -182,13 +119,23 @@ int main(int total, char* argumentos[])
    );
    executa_testes_b(
       true, 4,
-         Unit(obtendo_respectivos_caminhos, false),
+         Unit(caminhos_de_ambos_executaveis, true),
          Unit(execucao_crua_do_pacotes_externos, false),
          Unit(execucao_do_cmd_frequencia_tendencia, false),
          Unit(execucao_do_cmd_frequencia_tudo, true)
    );
 
    return EXIT_SUCCESS;
+}
+
+TESTE caminhos_de_ambos_executaveis(void)
+{
+   Caminho path_a = caminho_cmd_frequencia();
+   Caminho path_b = caminho_pacotes_externos();
+
+   printf("Cmd-Frequência: '%s'\nPacotes Externos: '%s'\n", path_a, path_b);
+   libera_caminho_externo(path_a);
+   libera_caminho_externo(path_b);
 }
 
 TESTE mexendo_com_chamada_execl(void)
@@ -209,18 +156,6 @@ TESTE mexendo_com_chamada_execl(void)
 
 TESTE execucao_do_cmd_frequencia_tudo(void)
    { cmd_frequencia("-t"); }
-
-TESTE obtendo_respectivos_caminhos(void)
-{
-   Caminho In_a = caminho_cmd_frequencia();
-   Caminho In_b = caminho_pacotes_externos();
-
-   puts(In_a);
-   puts(In_b);
-
-   free_caminho(In_a);
-   free_caminho(In_b);
-}
 
 TESTE execucao_crua_do_pacotes_externos(void)
    { pacotes_externos(); }

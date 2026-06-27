@@ -129,12 +129,15 @@ test-menu:
 									  -lterminal -lm -lcomputa -lteste
 
 test-funcionalidades:
-	gcc -c -D__unit_tests__ -D__debug__ -I$(LOCAL_UTILS_HEADERS) -std=c11 \
-		-o build/funcionalidades-test.obj src/funcionalidades.c
-	gcc -I$(LOCAL_UTILS_HEADERS) -o \
+	@$(CLANG) -c -I$(LOCAL_UTILS_HEADERS) -std=c11 \
+				 -D__unit_tests__ -D__debug__ \
+				 -o build/funcionalidades-test.obj src/funcionalidades.c
+	@echo "O objeto dos testes unitários 'funcionalidades-test' foi gerado."
+	@$(CLANG) -I$(LOCAL_UTILS_HEADERS) -o \
 		bin/tests/ut-fucionalidades build/funcionalidades-test.obj \
 		-L$(LIB_UTILS_ST_BINS) -lteste -lm \
 		-L$(LOCAL_UTILS_BINS) -lcaminhobase
+	@echo "O testes unitário 'ut-funcionalidades' foi compilado em 'bin/tests'."
 
 #=== === === === === === === === === === === === === === === ==== == === ==
 obj-linque:
@@ -240,7 +243,7 @@ debug: caminho-base-debug
 	@$(CLANG) -I$(LOCAL_UTILS_HEADERS) -O0 -g3 -D__debug__ -Wall \
 		-c -o build/funcionalidades-debug.o src/funcionalidades.c
 	@echo "Compilado objeto do 'funcionalidades-debug'."
-	$(CLANG) -I$(LOCAL_UTILS_HEADERS) -D__debug__ \
+	@$(CLANG) -I$(LOCAL_UTILS_HEADERS) -D__debug__ \
 		-o ./bin/$(NOME)-debug \
 			build/main-debug.o build/classificacao-debug.o \
 			build/variaveis_de_ambiente-debug.o build/filtro-debug.o \
