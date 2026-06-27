@@ -14,6 +14,7 @@ mod nucleo;
 
 // Biblioteca padrão do Rust:
 use std::process::{exit};
+use std::collections::{HashMap};
 // Ferramental dos módulos criados:
 use historico::{Historico};
 use banco::{registra_um_historico, carrega_historicos};
@@ -93,7 +94,10 @@ fn mostra_listagem_dos_pacotes_baixados() {
    let repositorio_win = organiza_fontes_e_suas_versoes(varredura_win);
    // Referências aos dicionários acima.
    let repo_linux = &repositorio_linux.as_ref().unwrap();
-   let repo_win = &repositorio_win.as_ref().unwrap();
+   /* Para não ocorrer um erro no Linux puro, ele retorna um mapa vázio, pelo
+    * erro 'levantado' no unwrap da lista de repositórios no WLS. */
+   let vazio = HashMap::<String, Vec<String>>::new();
+   let repo_win = &repositorio_win.as_ref().unwrap_or(&vazio);
 
    if repositorio_linux.is_none()
       { println!("Não há repositórios neste sistema."); exit(0); }

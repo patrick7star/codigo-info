@@ -129,11 +129,12 @@ test-menu:
 									  -lterminal -lm -lcomputa -lteste
 
 test-funcionalidades:
-	gcc -c -D__unit_tests__ -D__debug__ -I$(LIB_UTILS_HEADERS) -std=c11 \
+	gcc -c -D__unit_tests__ -D__debug__ -I$(LOCAL_UTILS_HEADERS) -std=c11 \
 		-o build/funcionalidades-test.obj src/funcionalidades.c
-	gcc -I$(LIB_UTILS_HEADERS) -o \
+	gcc -I$(LOCAL_UTILS_HEADERS) -o \
 		bin/tests/ut-fucionalidades build/funcionalidades-test.obj \
-		-L$(LIB_UTILS_ST_BINS) -lteste -lm
+		-L$(LIB_UTILS_ST_BINS) -lteste -lm \
+		-L$(LOCAL_UTILS_BINS) -lcaminhobase
 
 #=== === === === === === === === === === === === === === === ==== == === ==
 obj-linque:
@@ -229,15 +230,14 @@ debug: caminho-base-debug
 	@$(CLANG) -I$(LOCAL_UTILS_HEADERS) -g3 -O0 -Wall -pedantic -D__debug__ \
 		-c -o build/classificacao-debug.o src/classificacao.c -Wno-pedantic
 	@echo "Compilado objeto 'classificação-debug'."
-	@$(CLANG) -I$(LOCAL_UTILS_HEADERS) -D__debug__ -g3 -O0 \
-		  -Wall -pedantic \
+	@$(CLANG) -I$(LOCAL_UTILS_HEADERS) -D__debug__ -g3 -O0 -Wall -pedantic \
 		-c -o build/linque-debug.o src/linque.c 
 	@echo "Compilado objeto 'linque-debug'."
 	@$(CLANG) -I$(LOCAL_UTILS_HEADERS) -g3 -O0 -D__unit_tests__ -D__debug__ \
 		-Wall -pedantic -Wno-unused-function -Wno-main \
 		-c -o ./build/main-debug.o ./src/main.c 
 	@echo "Compilado objeto do 'main-debug'."
-	@$(CLANG) -O0 -g3 -D__debug__ -Wall \
+	@$(CLANG) -I$(LOCAL_UTILS_HEADERS) -O0 -g3 -D__debug__ -Wall \
 		-c -o build/funcionalidades-debug.o src/funcionalidades.c
 	@echo "Compilado objeto do 'funcionalidades-debug'."
 	$(CLANG) -I$(LOCAL_UTILS_HEADERS) -D__debug__ \
