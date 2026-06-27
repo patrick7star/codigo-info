@@ -5,3 +5,4 @@ lib/*.a
 lib/*.so
 target/
 Cargo.lock
+data/ordem-de.dat
