@@ -6,3 +6,4 @@ lib/*.so
 target/
 Cargo.lock
 data/ordem-de.dat
+data/banco.dat
