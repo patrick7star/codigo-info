@@ -209,6 +209,25 @@ cmd-frequencia-release: cria-raiz-programas
 		-Llib/ -lteste -lvisualiza
 	@echo "Lincados num binário chamado 'cmd-frequencia'."
 
+# Este caso é necessário o compilador de C/C++ no linux para progressir a 
+# compilação.
+tempo-execucao-release:
+	@clang-cl.exe /O2 /Ot \
+		/c /Fobuild/tempo-execucao-main-release.o \
+			./tempo-execucao/main.c
+	@echo "Objeto 'tempo-execucao-main-release' gerado."
+	@clang-cl.exe /O2 /Ot \
+		/c /Fobuild/legivel-release.o \
+			./tempo-execucao/legivel.c
+	@echo "Objeto 'legivel-release' gerado."
+	@clang-cl.exe /O2 /Ot /c /Fobuild/motor-release.o ./tempo-execucao/motor.c
+	@echo "Objeto 'motor-release' gerado."
+	@clang-cl.exe /Fe:./bin/programs/tempo-execucao.exe \
+		build/legivel-release.o						\
+		build/motor-release.o						\
+		build/tempo-execucao-main-release.o 
+	@echo "Executavel 'tempo-execucao-release' compilado em 'bin/programs'."
+
 caminho-base:
 	@rustc --out-dir=lib/ --crate-type=staticlib --crate-name=caminhobase \
 			 pacotes-externos/src/linque.rs -C strip=debuginfo -C opt-level=3

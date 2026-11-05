@@ -66,6 +66,29 @@ void cmd_frequencia(const char* OPCAO)
    // Más, por uma boa prática, aqui continua.
    libera_caminho_externo(caminho);
 }
+
+void tempo_em_execucao(const char* OPCAO)
+{
+   char* COMPLEMENTO = "bin/programs/tempo-execucao.exe";
+   Caminho caminho = computa_caminho_externo(COMPLEMENTO);
+
+   #ifdef __debug__
+   printf("Caminho: '%s'\n", caminho);
+   #endif
+
+   if (execl(caminho, "tempo-execucao.exe", OPCAO, NULL) == -1)
+   {
+      perror("O programa falhou na execução.");
+      perror(strerror(errno));
+      abort();
+   } 
+   puts("Funcionalidade ausente em sistemas não Windows NT.");
+
+   // Nunca é alcançado, pois função 'exec' substitui toda memória do processo.
+   // Más, por uma boa prática, aqui continua.
+   libera_caminho_externo(caminho);
+}
+
 /* -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- --- ---
  *                   Interface Privada Implementação
  * -- --- --- --- --- --- --- --- --- --- --- --- --- --- --- ---- -- -- -- */

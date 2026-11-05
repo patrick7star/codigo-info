@@ -164,9 +164,10 @@ extern void menu_interface_do_programa_i(char* args[], int total)
       {"repositorio-links", optional_argument, NULL, 'L'}, 
       {"cmd-mais-frequentes", no_argument, NULL, 'M'}, 
       {"cmd-frequencia", no_argument, NULL, 't'}, 
-      {"rust-cache", no_argument, NULL, 'e'}
+      {"rust-cache", no_argument, NULL, 'e'},
+      {"tempo-execucao", no_argument, NULL, 'T'}
    };
-   const char* const CURTAS = "hi:PL::Mte";
+   const char* const CURTAS = "hi:PL::MteT";
    const int Falhou = -1;
    int indice, result = getopt_long(total, args, CURTAS, LONGAS, &indice);
    DirInfo agregado;
@@ -218,6 +219,8 @@ extern void menu_interface_do_programa_i(char* args[], int total)
       case 'M':
          cmd_frequencia("-M");
          break;
+      case 'T':
+         tempo_em_execucao(NULL);
       default:
          perror("Algum erro não previsto!");
          abort();
@@ -345,6 +348,13 @@ static void folha_de_ajuda(void) {
          'e', "rust-cache",
          "\t\tA o gerenciador de pacotes externos faz um bocado de downloads,\n"
          "\teste aqui lista e organiza-os", NULL
+      },
+      (struct Opcao) {
+         'T', "tempo-execucao",
+         "\t\tObtém tanto o tempo de execuçao do WSL, como também do tempo"
+         "\n\tque o Windows está em execução. Além do horário atual do"
+         "\n\tsistema.\n\tNota: Isso é uma funcionalidade apenas do Windows."
+         "\n\tTalvez futuramente seja portada também para Linux.", NULL
       }
    };
    const int size = sizeof(struct Opcao);

@@ -3,5 +3,6 @@
 
  void pacotes_externos(void);
  void cmd_frequencia(const char* OPCAO);
+ void tempo_em_execucao(const char* OPCAO);
 
 #endif
