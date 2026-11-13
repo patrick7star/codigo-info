@@ -6,6 +6,7 @@
 from pathlib import (Path)
 from pycurl import (Curl, URL, WRITEDATA, FOLLOWLOCATION, RESPONSE_CODE)
 from queue import (SimpleQueue as Queue)
+from subprocess import (Popen, PIPE)
 
 
 def realiza_download_do_html_com_repositorios() -> Path:
@@ -45,7 +46,7 @@ def extrai_apenas_o_endpoint(Input: str) -> str:
    # enclausurado.
    return Out[1].removeprefix("href=").strip('\"').rstrip('\"')
 
-def filtra_todos_repositorios_disponiveis(In: Path) -> list[Path]:
+def filtra_todos_repositorios_disponiveis(In: Path) -> list[str]:
    assert In.is_file()
 
    PROPRIETARIO = "patrick7star"
@@ -78,8 +79,77 @@ def git_esta_instalado() -> bool:
    executavel = Path("/usr/bin/git")
    return executavel.exists() and executavel.is_file()
 
+def extrai_nome_na_url_especifica(In: str) -> str:
+   assert isinstance(In, str)
+
+   marcador = In.rfind('/') + 1
+   In = In[marcador:]
+
+   return In.replace('-', ' ').removesuffix(".git").title()
+
+def listagem_de_repositorios_disponiveis() -> list[str]:
+   "Por enquanto este apenas processa o resultado de 'FTRD'."
+   repo = realiza_download_do_html_com_repositorios()
+   urls = filtra_todos_repositorios_disponiveis(repo)
+
+   if __debug__:
+      os.unlink(repo)
+
+   return list(map(extrai_nome_na_url_especifica, urls))
+
+def realiza_download(url: str) -> Path:
+   "Realiza o download da url no repositório temporario(em '/tmp')."
+   # Extrai o nome do pacote que será baixado, baseado na sua URL.
+   posicao = url.rfind('/') + 1
+   nome = url[posicao:].removesuffix(".git")
+   diretorio = "/tmp/codigo-info-data"
+   # Define onde colocar o que foi baixado.
+   DESTINO = Path(diretorio).joinpath(nome)
+   PROGRAMA = "/usr/bin/git"
+
+   if __debug__:
+      print("URL: '%s'" % url)
+
+   handle = Popen([PROGRAMA, "clone", url, DESTINO], )
+   handle.wait()
+
+   if handle.returncode == 0:
+      print("Foi baixado com sucesso.")
+
+   return DESTINO
+
 from unittest import (TestCase)
 import os
+from random import (randint, choice)
+from shutil import(rmtree)
+
+class BaixaTodosRepositoriosDaFonte(TestCase):
+   def setUp(self):
+      self.bolsa = []
+
+   def tearDown(self):
+      print("Tudo que foi baixado, e o caminho a ele:")
+
+      for caminho in self.bolsa:
+         print('\t\b\b\b-', caminho, end=' ')
+         rmtree(caminho)
+         print("excluido.")
+
+   def runTest(self):
+      raiz = realiza_download_do_html_com_repositorios()
+      lista_de_repositorios = filtra_todos_repositorios_disponiveis(raiz)
+
+      for url in lista_de_repositorios:
+         self.bolsa.append(realiza_download(url))
+
+
+class BaixaRepositorioNoDiretorioTemporario(TestCase):
+   def runTest(self):
+      raiz = realiza_download_do_html_com_repositorios()
+      lista_de_repositorios = filtra_todos_repositorios_disponiveis(raiz)
+      escolha = choice(lista_de_repositorios)
+
+      print(realiza_download(escolha))
 
 class DownloadDoArquivoHTML(TestCase):
    def tearDown(self):
@@ -117,3 +187,17 @@ class VerificaSeOGitEstaInstalado(TestCase):
    def runTest(self):
       resposta = git_esta_instalado()
       print("\nEstá o 'git' instalado? %s." % resposta)
+
+class ListagemSimplesDosRepositorios(TestCase):
+   """
+   Como ainda é apenas um wrapper de filtra_todos_repositorios_disponiveis,
+   então retornarar apenas uma lista com os nomes capitlizados. O objetivo
+   no futuro será fazer isso bem mais detalhado.
+   """
+   def runTest(self):
+      output = listagem_de_repositorios_disponiveis()
+
+      print("A listagem dos repositórios disponvéis no Git:")
+
+      for item in output:
+         print('\t-', item)
