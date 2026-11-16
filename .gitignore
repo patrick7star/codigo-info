@@ -7,3 +7,4 @@ target/
 Cargo.lock
 data/ordem-de.dat
 data/banco.dat
+data/git-repositories.html
