@@ -7,7 +7,13 @@ from pathlib import (Path)
 from pycurl import (Curl, URL, WRITEDATA, FOLLOWLOCATION, RESPONSE_CODE)
 from queue import (SimpleQueue as Queue)
 from subprocess import (Popen, PIPE)
+from shutil import (move)
 
+__all__ = [
+  "listagem_de_repositorios_disponiveis",
+  "mapea_nome_e_url_nos_repositorios",
+  "realiza_download_no_atual_diretorio"
+  ]
 
 def realiza_download_do_html_com_repositorios() -> Path:
    "Faz o download da página com os respectivos linques aos seus repositórios."
@@ -118,10 +124,60 @@ def realiza_download(url: str) -> Path:
 
    return DESTINO
 
+def extrai_nome_do_repositorio_na_url(url: str) -> str:
+   assert (isinstance(url, str))
+
+   posicao = url.rfind('/') + 1
+   nome = url[posicao:].removesuffix(".git")
+
+   return nome
+
+def realiza_download_no_atual_diretorio(url: str) -> Path:
+   "O mesmo que o acima, porém realiza o download no atual diretório."
+   fonte = realiza_download(url)
+   nome_pkg = extrai_nome_do_repositorio_na_url(url)
+   destino = Path('.').joinpath(nome_pkg)
+
+   move(fonte, destino)
+   return destino
+
+def mapea_nome_e_url_nos_repositorios() -> dict[str: str]:
+   arquivo = realiza_download_do_html_com_repositorios()
+   Input = filtra_todos_repositorios_disponiveis(arquivo)
+   Output = dict([])
+
+   for url in Input:
+      rotulo = extrai_nome_na_url_especifica(url)
+      Output[rotulo] = url
+   return Output
+
 from unittest import (TestCase)
 import os
 from random import (randint, choice)
 from shutil import(rmtree)
+
+class DicionarioComNomeEUrl(TestCase):
+   def runTest(self):
+      out = mapea_nome_e_url_nos_repositorios()
+
+      print("\nA listagem do que foi mapeado:")
+
+      for (chave, valor) in out.items():
+         print('\t\b\b\b\b- {}: {:>70s}'.format(chave, valor))
+
+class BaixaRepositorioNoDiretorioAtual(TestCase):
+   def tearDown(self):
+      self.assertTrue(self.out.exists())
+      rmtree(self.out)
+      self.assertFalse(self.out.exists())
+      print("%s excluido com sucesso." % str(self.out))
+
+   def runTest(self):
+      raiz = realiza_download_do_html_com_repositorios()
+      lista_de_repositorios = filtra_todos_repositorios_disponiveis(raiz)
+      escolha = choice(lista_de_repositorios)
+
+      self.out = realiza_download_no_atual_diretorio(escolha)
 
 class BaixaTodosRepositoriosDaFonte(TestCase):
    def setUp(self):
@@ -141,7 +197,6 @@ class BaixaTodosRepositoriosDaFonte(TestCase):
 
       for url in lista_de_repositorios:
          self.bolsa.append(realiza_download(url))
-
 
 class BaixaRepositorioNoDiretorioTemporario(TestCase):
    def runTest(self):

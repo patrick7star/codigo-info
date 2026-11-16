@@ -238,6 +238,18 @@ caminho-base-debug:
 			 --out-dir=./build  pacotes-externos/src/linque.rs
 	@echo "Biblioteca estática[debug] 'libcaminhobase.a' gerada em 'build'."
 
+dylib-repo-downloads:
+	clang -I/usr/include/python3.12 \
+			-fno-strict-overflow -Wsign-compare  -DNDEBUG -ggdb -O0 -Wall -shared \
+			-L/usr/lib/python3.12/config-3.12-x86_64-linux-gnu \
+			-L/usr/lib/x86_64-linux-gnu -lpython3.12 -ldl  -lm \
+			-o lib/librepodown.so repo-downloads/repodownloads.c
+
+test-repo-downloads:
+	clang -I./repo-downloads/ -I/usr/include/python3.12 \
+			repo-downloads/unitarios.c \
+			-o bin/tests/ut-repodownloads \
+			-Llib -lrepodown -ldl -lm
 #=== === === === === === === === === === === === === === === ==== == === ===
 debug: caminho-base-debug
 	@$(CLANG) -I$(LOCAL_UTILS_HEADERS) -g3 -O0 -Wall -pedantic \
