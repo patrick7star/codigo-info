@@ -10,15 +10,26 @@ from subprocess import (Popen, PIPE)
 from shutil import (move)
 
 __all__ = [
-  "listagem_de_repositorios_disponiveis",
-  "mapea_nome_e_url_nos_repositorios",
-  "realiza_download_no_atual_diretorio"
+  "lista_de_repositorios_disponiveis",
+  #"mapea_nome_e_url_nos_repositorios",
+  "realiza_download_no_atual_diretorio",
   ]
+PATHNAME = "data/git-repositories.html"
+
+
+def realiza_download_no_atual_diretorio(url: str) -> Path:
+   "O mesmo que o acima, porém realiza o download no atual diretório."
+   fonte = realiza_download(url)
+   nome_pkg = extrai_nome_do_repositorio_na_url(url)
+   destino = Path('.').joinpath(nome_pkg)
+
+   move(fonte, destino)
+   return destino
+
 
 def realiza_download_do_html_com_repositorios() -> Path:
    "Faz o download da página com os respectivos linques aos seus repositórios."
    url = "https://github.com/patrick7star?tab=repositories"
-   PATHNAME = "data/git-repositories.html"
 
    with open(PATHNAME, "wb") as stream:
       curl = Curl()
@@ -93,7 +104,7 @@ def extrai_nome_na_url_especifica(In: str) -> str:
 
    return In.replace('-', ' ').removesuffix(".git").title()
 
-def listagem_de_repositorios_disponiveis() -> list[str]:
+def lista_de_repositorios_disponiveis() -> list[str]:
    "Por enquanto este apenas processa o resultado de 'FTRD'."
    repo = realiza_download_do_html_com_repositorios()
    urls = filtra_todos_repositorios_disponiveis(repo)
@@ -132,15 +143,6 @@ def extrai_nome_do_repositorio_na_url(url: str) -> str:
 
    return nome
 
-def realiza_download_no_atual_diretorio(url: str) -> Path:
-   "O mesmo que o acima, porém realiza o download no atual diretório."
-   fonte = realiza_download(url)
-   nome_pkg = extrai_nome_do_repositorio_na_url(url)
-   destino = Path('.').joinpath(nome_pkg)
-
-   move(fonte, destino)
-   return destino
-
 def mapea_nome_e_url_nos_repositorios() -> dict[str: str]:
    arquivo = realiza_download_do_html_com_repositorios()
    Input = filtra_todos_repositorios_disponiveis(arquivo)
@@ -151,6 +153,32 @@ def mapea_nome_e_url_nos_repositorios() -> dict[str: str]:
       Output[rotulo] = url
    return Output
 
+def proprietario_do_repositorio(caminho: Path) -> str:
+   "Retorna o proprietário da URL atual que foi baixada."
+   assert (caminho.is_file())
+
+   REPO_HTML = caminho
+   tag_conteudo = None
+   VAZIO = ""
+
+   with open(REPO_HTML, "rt") as stream:
+      for linha in stream:
+         if ("<title>" in linha) and ("</title>" in linha):
+            tag_conteudo = linha
+            break
+
+   if tag_conteudo is None:
+      raise Exception("Não foi possível achar a tag '<title>'!")
+
+   fim = tag_conteudo.find("/")
+   tag_conteudo = tag_conteudo[0:fim]
+   return ( tag_conteudo
+            .replace("<title>", VAZIO)
+            .replace("/<title>", VAZIO)
+            .strip().rstrip()
+           )
+
+
 from unittest import (TestCase)
 import os
 from random import (randint, choice)
@@ -159,8 +187,10 @@ from shutil import(rmtree)
 class DicionarioComNomeEUrl(TestCase):
    def runTest(self):
       out = mapea_nome_e_url_nos_repositorios()
+      caminho = Path(PATHNAME)
+      nome = proprietario_do_repositorio(caminho)
 
-      print("\nA listagem do que foi mapeado:")
+      print("\nA listagem do que foi mapeado em {}:".format(nome))
 
       for (chave, valor) in out.items():
          print('\t\b\b\b\b- {}: {:>70s}'.format(chave, valor))
@@ -250,7 +280,7 @@ class ListagemSimplesDosRepositorios(TestCase):
    no futuro será fazer isso bem mais detalhado.
    """
    def runTest(self):
-      output = listagem_de_repositorios_disponiveis()
+      output = lista_de_repositorios_disponiveis()
 
       print("A listagem dos repositórios disponvéis no Git:")
 

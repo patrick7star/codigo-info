@@ -249,7 +249,7 @@ test-repo-downloads:
 	clang -I./repo-downloads/ -I/usr/include/python3.12 \
 			repo-downloads/unitarios.c \
 			-o bin/tests/ut-repodownloads \
-			-Llib -lrepodown -ldl -lm
+			-Llib -lrepodown -ldl -lm -lpython3.12
 #=== === === === === === === === === === === === === === === ==== == === ===
 debug: caminho-base-debug
 	@$(CLANG) -I$(LOCAL_UTILS_HEADERS) -g3 -O0 -Wall -pedantic \
